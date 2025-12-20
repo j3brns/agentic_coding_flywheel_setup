@@ -1,7 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useMemo } from "react";
+import { Terminal, Home, ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Stepper, StepperMobile } from "@/components/stepper";
 import { WIZARD_STEPS, getStepBySlug } from "@/lib/wizardSteps";
 
@@ -14,12 +17,15 @@ export default function WizardLayout({
   const router = useRouter();
 
   // Extract current step from URL path
-  // e.g., /wizard/os -> "os" -> step 1
   const currentStep = useMemo(() => {
     const slug = pathname.split("/").pop() || "";
     const step = getStepBySlug(slug);
     return step?.id ?? 1;
   }, [pathname]);
+
+  const currentStepData = WIZARD_STEPS.find((s) => s.id === currentStep);
+  const prevStep = WIZARD_STEPS.find((s) => s.id === currentStep - 1);
+  const nextStep = WIZARD_STEPS.find((s) => s.id === currentStep + 1);
 
   const handleStepClick = useCallback(
     (stepId: number) => {
@@ -31,30 +37,156 @@ export default function WizardLayout({
     [router]
   );
 
+  const progress = (currentStep / WIZARD_STEPS.length) * 100;
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="relative min-h-screen bg-background">
+      {/* Subtle background effects */}
+      <div className="pointer-events-none fixed inset-0 bg-gradient-cosmic opacity-50" />
+      <div className="pointer-events-none fixed inset-0 bg-grid-pattern opacity-20" />
+
       {/* Desktop layout with sidebar */}
-      <div className="mx-auto flex max-w-6xl">
+      <div className="relative mx-auto flex max-w-7xl">
         {/* Stepper sidebar - hidden on mobile */}
-        <aside className="sticky top-0 hidden h-screen w-64 shrink-0 border-r p-6 md:block">
-          <div className="mb-6">
-            <h1 className="text-lg font-semibold">ACFS Setup</h1>
-            <p className="text-sm text-muted-foreground">
-              Step {currentStep} of {WIZARD_STEPS.length}
-            </p>
+        <aside className="sticky top-0 hidden h-screen w-72 shrink-0 border-r border-border/50 bg-sidebar/80 backdrop-blur-sm md:block">
+          <div className="flex h-full flex-col">
+            {/* Logo */}
+            <div className="flex items-center gap-3 border-b border-border/50 px-6 py-5">
+              <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/20">
+                  <Terminal className="h-4 w-4 text-primary" />
+                </div>
+                <span className="font-mono text-sm font-bold tracking-tight">ACFS</span>
+              </Link>
+            </div>
+
+            {/* Progress indicator */}
+            <div className="px-6 py-4">
+              <div className="mb-2 flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">Progress</span>
+                <span className="font-mono text-primary">{currentStep}/{WIZARD_STEPS.length}</span>
+              </div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full bg-gradient-to-r from-primary to-[oklch(0.7_0.2_330)] transition-all duration-500"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Step list */}
+            <div className="flex-1 overflow-y-auto px-4 py-2">
+              <Stepper currentStep={currentStep} onStepClick={handleStepClick} />
+            </div>
+
+            {/* Sidebar footer */}
+            <div className="border-t border-border/50 p-4">
+              <Button
+                asChild
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start text-muted-foreground hover:text-foreground"
+              >
+                <Link href="/">
+                  <Home className="mr-2 h-4 w-4" />
+                  Back to Home
+                </Link>
+              </Button>
+            </div>
           </div>
-          <Stepper currentStep={currentStep} onStepClick={handleStepClick} />
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 px-6 py-8 md:px-12">
-          <div className="mx-auto max-w-2xl">{children}</div>
+        <main className="flex-1 pb-24 md:pb-8">
+          {/* Mobile header */}
+          <div className="sticky top-0 z-20 flex items-center justify-between border-b border-border/50 bg-background/80 px-4 py-3 backdrop-blur-sm md:hidden">
+            <Link href="/" className="flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/20">
+                <Terminal className="h-3.5 w-3.5 text-primary" />
+              </div>
+              <span className="font-mono text-sm font-bold">ACFS</span>
+            </Link>
+            <div className="text-xs text-muted-foreground">
+              Step <span className="font-mono text-primary">{currentStep}</span> of {WIZARD_STEPS.length}
+            </div>
+          </div>
+
+          {/* Content area */}
+          <div className="px-6 py-8 md:px-12 md:py-12">
+            <div className="mx-auto max-w-2xl">
+              {/* Step title (desktop) */}
+              <div className="mb-8 hidden md:block">
+                <div className="mb-2 flex items-center gap-2 text-sm text-muted-foreground">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 font-mono text-xs text-primary">
+                    {currentStep}
+                  </span>
+                  <span>Step {currentStep} of {WIZARD_STEPS.length}</span>
+                </div>
+                {currentStepData && (
+                  <h1 className="font-mono text-2xl font-bold tracking-tight">
+                    {currentStepData.title}
+                  </h1>
+                )}
+              </div>
+
+              {/* Page content */}
+              <div className="animate-scale-in">{children}</div>
+
+              {/* Navigation buttons (desktop) */}
+              <div className="mt-12 hidden items-center justify-between md:flex">
+                {prevStep ? (
+                  <Button
+                    variant="ghost"
+                    onClick={() => handleStepClick(prevStep.id)}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    <ChevronLeft className="mr-1 h-4 w-4" />
+                    {prevStep.title}
+                  </Button>
+                ) : (
+                  <div />
+                )}
+                {nextStep && (
+                  <Button
+                    onClick={() => handleStepClick(nextStep.id)}
+                    className="bg-primary text-primary-foreground"
+                  >
+                    {nextStep.title}
+                    <ChevronRight className="ml-1 h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
         </main>
       </div>
 
       {/* Mobile stepper - shown only on mobile */}
-      <div className="fixed bottom-0 left-0 right-0 border-t bg-background p-4 md:hidden">
+      <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-border/50 bg-background/95 p-4 backdrop-blur-md md:hidden">
         <StepperMobile currentStep={currentStep} onStepClick={handleStepClick} />
+
+        {/* Mobile navigation */}
+        <div className="mt-3 flex items-center justify-between gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => prevStep && handleStepClick(prevStep.id)}
+            disabled={!prevStep}
+            className="flex-1"
+          >
+            <ChevronLeft className="mr-1 h-4 w-4" />
+            Back
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => nextStep && handleStepClick(nextStep.id)}
+            disabled={!nextStep}
+            className="flex-1 bg-primary text-primary-foreground"
+          >
+            Next
+            <ChevronRight className="ml-1 h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </div>
   );
