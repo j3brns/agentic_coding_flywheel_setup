@@ -553,7 +553,7 @@ function StatsBadge() {
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
             <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500"></span>
           </span>
-          <span className="text-xs text-green-400">Active</span>
+          <span className="text-[12px] text-green-400">Active</span>
         </div>
       </div>
     </div>
@@ -616,7 +616,7 @@ export default function FlywheelVisualization() {
       <div className="mb-8 md:mb-12 text-center">
         <div className="mb-4 flex items-center justify-center gap-3">
           <div className="h-px w-8 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-          <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-primary">Ecosystem</span>
+          <span className="text-xs font-bold uppercase tracking-[0.25em] text-primary">Ecosystem</span>
           <div className="h-px w-8 bg-gradient-to-l from-transparent via-primary/50 to-transparent" />
         </div>
         <h2 className="mb-4 font-mono text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight text-foreground">

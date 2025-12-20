@@ -736,10 +736,7 @@ function CTASection() {
 
 export default function FlywheelPage() {
   return (
-    <div className="relative min-h-screen bg-background">
-      {/* Noise texture overlay */}
-      <div className="pointer-events-none fixed inset-0 z-50 bg-noise" />
-
+    <div className="relative min-h-screen bg-background overflow-x-hidden">
       {/* Navigation */}
       <nav className="relative z-20 mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:py-6">
         <div className="flex items-center gap-4">

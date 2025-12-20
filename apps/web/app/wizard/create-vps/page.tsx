@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "@tanstack/react-form";
 import { Check, AlertCircle, Server, ChevronDown, HardDrive } from "lucide-react";
@@ -76,33 +76,24 @@ function ProviderGuide({
 
 const PROVIDER_GUIDES = [
   {
-    name: "OVH",
-    steps: [
-      'Click "Order" on your chosen VPS plan',
-      'Under "Image", select Ubuntu 25.04 (or latest)',
-      'Under "SSH Key", click "Add a key" and paste your public key',
-      "Complete the order and wait for activation email",
-      "Copy the IP address from your control panel",
-    ],
-  },
-  {
     name: "Contabo",
     steps: [
-      'After ordering, go to "Your services" > "VPS control"',
-      'Click "Reinstall" and select Ubuntu 25.x',
-      'Under "SSH Key", paste your public key',
-      "Wait for the reinstallation to complete",
-      "Copy the IP address shown in the control panel",
+      'Go to contabo.com/en/vps and find "Cloud VPS L" (32GB RAM)',
+      'Click "Configure" and select your preferred region (US or EU)',
+      'Under "Image", select Ubuntu 24.04 or 25.x',
+      'In the order form, paste your SSH public key when prompted',
+      "Complete checkout — servers activate within minutes",
+      'Go to "Your services" > "VPS control" to find your IP address',
     ],
   },
   {
-    name: "Hetzner",
+    name: "OVH",
     steps: [
-      'In Cloud Console, click "Add Server"',
-      'Select your location and Ubuntu 25.04 image',
-      'Under "SSH Keys", add your public key',
-      'Click "Create & Buy Now"',
-      "Copy the IP address once the server is running",
+      'Click "Order" on VPS Comfort (16GB) or VPS Elite (32GB)',
+      'Under "Image", select Ubuntu 25.04 (or latest)',
+      'Under "SSH Key", click "Add a key" and paste your public key',
+      "Complete the order — activation is usually instant",
+      "Copy the IP address from your control panel",
     ],
   },
 ];
@@ -127,6 +118,17 @@ export default function CreateVPSPage() {
       router.push("/wizard/ssh-connect");
     },
   });
+
+  // Track if we've synced the stored IP to avoid overwriting user edits
+  const hasSyncedStoredIP = useRef(false);
+
+  // Sync stored IP to form after hydration (storedIP is null during SSR)
+  useEffect(() => {
+    if (storedIP && !hasSyncedStoredIP.current && !form.state.values.ipAddress) {
+      form.setFieldValue("ipAddress", storedIP);
+      hasSyncedStoredIP.current = true;
+    }
+  }, [storedIP, form]);
 
   const handleCheckItem = (itemId: ChecklistItemId, checked: boolean) => {
     setCheckedItems((prev) => {

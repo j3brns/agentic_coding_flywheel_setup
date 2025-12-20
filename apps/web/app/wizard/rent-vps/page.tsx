@@ -238,36 +238,107 @@ export default function RentVPSPage() {
             With a VPS, your AI assistants can work even when you&apos;re asleep!
           </GuideExplain>
 
-          <GuideSection title="Which provider should I choose?">
-            <p className="mb-4">
-              All three providers we recommend are good choices. Here&apos;s a simple guide:
-            </p>
-            <ul className="space-y-3">
+          <GuideSection title="Why 32GB RAM?">
+            <div className="rounded-lg border border-[oklch(0.78_0.16_75/0.3)] bg-[oklch(0.78_0.16_75/0.08)] p-4 mb-4">
+              <p className="font-medium text-foreground mb-2">⚡ This matters a lot!</p>
+              <p className="text-sm text-muted-foreground">
+                Each AI coding agent (like Claude Code) uses about 2GB of RAM when running.
+                To get the full power of this approach, you&apos;ll want to run 10+ agents
+                simultaneously. That&apos;s 20GB+ just for the agents, plus room for your
+                development tools and databases.
+              </p>
+            </div>
+            <ul className="space-y-2 text-sm">
               <li>
-                <strong>Hetzner</strong> — Best for most people. Clean interface, fair prices,
-                popular with developers. We recommend this if you&apos;re unsure.
+                <strong>16GB RAM</strong> — Bare minimum. Can run 3-5 agents. Good for testing.
               </li>
               <li>
-                <strong>OVH</strong> — Great if you&apos;re in Europe or want European data centers.
-                Slightly more complex signup process.
+                <strong>32GB RAM</strong> — Sweet spot. Run 10+ agents comfortably. Recommended!
               </li>
               <li>
-                <strong>Contabo</strong> — Cheapest option for high specs. Good if budget is
-                a concern, but their interface is a bit dated.
+                <strong>64GB+ RAM</strong> — Power user mode. Run 20+ agents with headroom.
               </li>
             </ul>
           </GuideSection>
 
-          <GuideSection title="Step-by-Step: Signing Up (Hetzner Example)">
+          <GuideSection title="The Full Investment (Optional but Recommended)">
+            <p className="mb-4 text-sm text-muted-foreground">
+              To get the FULL benefit of this approach with many parallel agents, you&apos;ll
+              also need subscriptions to AI services. This is optional — you can start
+              smaller and scale up!
+            </p>
+            <div className="space-y-3">
+              <div className="rounded-lg border border-border/50 bg-card/50 p-3">
+                <p className="font-medium text-foreground">Claude Max — $200/month</p>
+                <p className="text-sm text-muted-foreground">
+                  Unlimited Claude Code usage. For serious multi-agent workflows, consider
+                  2 accounts ($400/month) to maximize parallel capacity.
+                </p>
+              </div>
+              <div className="rounded-lg border border-border/50 bg-card/50 p-3">
+                <p className="font-medium text-foreground">GPT Pro — $200/month</p>
+                <p className="text-sm text-muted-foreground">
+                  Access to OpenAI&apos;s Codex and o1 models. Great for redundancy and
+                  comparing outputs from different AI systems.
+                </p>
+              </div>
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+                <p className="font-medium text-foreground">Total for full setup:</p>
+                <p className="text-sm text-muted-foreground">
+                  VPS ($40) + Claude Max x2 ($400) + GPT Pro ($200) = <strong>~$640/month</strong>
+                  <br /><br />
+                  <em>This sounds like a lot, but if it helps you build and ship faster,
+                  it pays for itself quickly!</em>
+                </p>
+              </div>
+            </div>
+            <p className="mt-4 text-sm text-muted-foreground">
+              <strong>Starting small?</strong> Just get a VPS ($35-40) and one Claude Pro
+              subscription ($20). You can scale up as you see results!
+            </p>
+          </GuideSection>
+
+          <GuideSection title="Which provider should I choose?">
+            <p className="mb-4">
+              Both providers we recommend are great. Here&apos;s how to choose:
+            </p>
+            <ul className="space-y-3">
+              <li>
+                <strong>Contabo</strong> — Our top recommendation! Best specs for the price.
+                Their 32GB RAM VPS is only ~$35/month. Interface is basic but functional.
+                Instant activation — no waiting.
+              </li>
+              <li>
+                <strong>OVH</strong> — Good alternative with excellent support. Slightly more
+                expensive but more polished interface. Great EU data centers. Also instant
+                activation.
+              </li>
+            </ul>
+          </GuideSection>
+
+          <GuideSection title="Step-by-Step: Signing Up (Contabo Example)">
             <div className="space-y-4">
-              <GuideStep number={1} title="Go to the provider's website">
-                Click on &quot;Hetzner&quot; above, or go to{" "}
-                <a href="https://www.hetzner.com/cloud" target="_blank" rel="noopener noreferrer" className="text-primary underline">
-                  hetzner.com/cloud
+              <GuideStep number={1} title="Go to Contabo's website">
+                Click on &quot;Contabo&quot; above, or go to{" "}
+                <a href="https://contabo.com/en/vps/" target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                  contabo.com/en/vps
                 </a>
               </GuideStep>
 
-              <GuideStep number={2} title="Create an account">
+              <GuideStep number={2} title="Choose the Cloud VPS L plan">
+                Look for &quot;Cloud VPS L&quot; — it has 6 vCPU, 32GB RAM, and 400GB storage
+                for about $35/month. Click &quot;Configure&quot; or &quot;Order&quot;.
+              </GuideStep>
+
+              <GuideStep number={3} title="Configure your VPS">
+                <ul className="mt-2 list-disc space-y-1 pl-5">
+                  <li><strong>Region:</strong> Choose closest to you (US or EU)</li>
+                  <li><strong>Storage:</strong> Keep the default SSD option</li>
+                  <li><strong>Image:</strong> Select &quot;Ubuntu 24.04&quot; or newer</li>
+                </ul>
+              </GuideStep>
+
+              <GuideStep number={4} title="Create an account">
                 Click &quot;Sign up&quot; or &quot;Register&quot;. You&apos;ll need:
                 <ul className="mt-2 list-disc space-y-1 pl-5">
                   <li>An email address</li>
@@ -276,22 +347,17 @@ export default function RentVPSPage() {
                 </ul>
               </GuideStep>
 
-              <GuideStep number={3} title="Verify your email">
-                Check your email for a verification link. Click it to confirm
-                your account. <em>Check your spam folder if you don&apos;t see it!</em>
-              </GuideStep>
-
-              <GuideStep number={4} title="Add payment method">
-                Most providers require a credit card or PayPal. This is normal —
-                you&apos;ll only be charged for what you use.
+              <GuideStep number={5} title="Add payment method">
+                Contabo accepts credit cards and PayPal. You&apos;ll be charged for the
+                first month upfront.
                 <br /><br />
-                <strong>Expected cost:</strong> Around $30-60/month depending on
-                the plan you choose. You can cancel anytime.
+                <strong>Tip:</strong> Monthly billing is fine to start. You can switch to
+                annual billing later for a small discount.
               </GuideStep>
 
-              <GuideStep number={5} title="That's it for now!">
-                Once your account is verified and payment is set up, you&apos;re ready
-                for the next step where we&apos;ll actually create the VPS.
+              <GuideStep number={6} title="Complete the order">
+                Review your order and complete checkout. Contabo activates servers
+                quickly — usually within minutes!
               </GuideStep>
             </div>
           </GuideSection>
@@ -303,16 +369,16 @@ export default function RentVPSPage() {
             </p>
             <ul className="space-y-2">
               <li>
-                <strong>vCPU (4-8)</strong> — The &quot;brain&quot; of the computer. More = faster.
-                4 is minimum, 8 is comfortable.
+                <strong>vCPU (6-8)</strong> — The &quot;brain&quot; of the computer. More = faster.
+                6 is comfortable, 8 is great.
               </li>
               <li>
-                <strong>RAM (8-16 GB)</strong> — Short-term memory. More = can do more things
-                at once. 8GB minimum, 16GB is better.
+                <strong>RAM (32 GB)</strong> — Short-term memory. This is crucial for running
+                multiple AI agents! 32GB lets you run 10+ agents comfortably.
               </li>
               <li>
-                <strong>Storage (100GB+ SSD)</strong> — Long-term storage for files and programs.
-                SSD means it&apos;s fast. 100GB is plenty to start.
+                <strong>Storage (200GB+ SSD)</strong> — Long-term storage for files, databases,
+                and AI model caches. SSD means it&apos;s fast. 200GB is a good starting point.
               </li>
               <li>
                 <strong>Ubuntu</strong> — The operating system we&apos;ll install. It&apos;s like
@@ -322,9 +388,9 @@ export default function RentVPSPage() {
           </GuideSection>
 
           <GuideTip>
-            Don&apos;t overthink the provider choice! All three work great. Pick one,
-            sign up, and you can always switch later if needed. The setup process
-            is similar for all of them.
+            <strong>Start with Contabo&apos;s Cloud VPS L</strong> for the best balance of
+            price and power. At ~$35/month for 32GB RAM, it&apos;s hard to beat. Both
+            Contabo and OVH activate servers instantly — no waiting period!
           </GuideTip>
 
           <GuideCaution>
