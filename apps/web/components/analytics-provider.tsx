@@ -168,19 +168,14 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
     const handleBeforeUnload = () => {
       const timeSpent = Math.floor((Date.now() - pageStartTime.current) / 1000);
 
-      // Use sendBeacon for reliable tracking on page exit
-      if (navigator.sendBeacon) {
-        const data = JSON.stringify({
-          event: 'page_exit',
-          page_path: pathname,
-          time_spent_seconds: timeSpent,
-          scroll_depths_reached: Array.from(scrollDepthsReached.current),
-        });
-        navigator.sendBeacon(
-          `https://www.google-analytics.com/mp/collect?measurement_id=${GA_MEASUREMENT_ID}&api_secret=`,
-          data
-        );
-      }
+      // Use GA4 gtag with beacon transport (Measurement Protocol api_secret cannot
+      // be safely used client-side).
+      sendEvent('page_exit', {
+        page_path: pathname,
+        time_spent_seconds: timeSpent,
+        scroll_depths_reached: Array.from(scrollDepthsReached.current),
+        transport_type: 'beacon',
+      });
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);

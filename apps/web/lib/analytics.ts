@@ -23,6 +23,41 @@ export const isAnalyticsEnabled = (): boolean => {
   return typeof window !== 'undefined' && !!GA_MEASUREMENT_ID && !!window.gtag;
 };
 
+// Get or create a persistent client ID for server-side tracking
+const getClientId = (): string => {
+  if (typeof window === 'undefined') return '';
+  let clientId = localStorage.getItem('ga_client_id');
+  if (!clientId) {
+    clientId = `${Date.now()}.${Math.random().toString(36).substr(2, 9)}`;
+    localStorage.setItem('ga_client_id', clientId);
+  }
+  return clientId;
+};
+
+/**
+ * Server-side event tracking via Measurement Protocol
+ * Bypasses ad blockers for reliable tracking
+ */
+export const sendServerEvent = async (
+  eventName: string,
+  params?: Record<string, string | number | boolean>
+): Promise<void> => {
+  if (typeof window === 'undefined') return;
+
+  try {
+    await fetch('/api/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_id: getClientId(),
+        events: [{ name: eventName, params }],
+      }),
+    });
+  } catch {
+    // Silently fail - don't disrupt user experience
+  }
+};
+
 // ============================================================
 // Core Event Tracking
 // ============================================================
@@ -412,16 +447,22 @@ export const getOrCreateUserId = (): string => {
 // ============================================================
 
 /**
- * Track key conversions
+ * Track key conversions (dual client + server-side for reliability)
  */
 export const trackConversion = (
   conversionType: 'wizard_start' | 'wizard_complete' | 'vps_created' | 'installer_run',
   value?: number
 ): void => {
-  sendEvent('conversion', {
+  const params = {
     conversion_type: conversionType,
-    conversion_value: value,
-  });
+    conversion_value: value ?? 0,
+  };
+
+  // Client-side tracking (fast, may be blocked)
+  sendEvent('conversion', params);
+
+  // Server-side tracking (reliable, bypasses ad blockers)
+  sendServerEvent('conversion', params);
 };
 
 // ============================================================
