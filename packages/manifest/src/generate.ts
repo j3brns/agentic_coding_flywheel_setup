@@ -72,10 +72,15 @@ function toCheckId(moduleId: string): string {
 }
 
 /**
- * Escape bash special characters in a string
+ * Escape special characters for use inside double-quoted bash strings.
+ * Handles: backslash, double-quote, dollar sign, backtick
  */
 function escapeBash(str: string): string {
-  return str.replace(/'/g, "'\\''");
+  return str
+    .replace(/\\/g, '\\\\')  // Backslash first (order matters)
+    .replace(/"/g, '\\"')    // Double quotes
+    .replace(/\$/g, '\\$')   // Dollar sign (prevents variable expansion)
+    .replace(/`/g, '\\`');   // Backticks (prevents command substitution)
 }
 
 /**

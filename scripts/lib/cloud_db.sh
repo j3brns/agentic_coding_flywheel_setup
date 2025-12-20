@@ -30,6 +30,22 @@ CLOUD_CLIS=(
 # Helper Functions
 # ============================================================
 
+# Security: Validate username contains only safe characters (alphanumeric + underscore)
+# Prevents SQL injection and command injection via username
+_cloud_validate_username() {
+    local username="$1"
+    if [[ ! "$username" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
+        log_error "Invalid username format: $username (must be alphanumeric + underscore)"
+        return 1
+    fi
+    # Also check reasonable length
+    if [[ ${#username} -gt 63 ]]; then
+        log_error "Username too long: $username (max 63 characters)"
+        return 1
+    fi
+    return 0
+}
+
 # Check if a command exists
 _cloud_command_exists() {
     command -v "$1" &>/dev/null
@@ -161,6 +177,12 @@ install_postgresql() {
 # Configure PostgreSQL for development use
 configure_postgresql() {
     local target_user="${TARGET_USER:-ubuntu}"
+
+    # Security: Validate username before using in SQL/commands
+    if ! _cloud_validate_username "$target_user"; then
+        log_error "Cannot configure PostgreSQL: invalid target user"
+        return 1
+    fi
 
     log_detail "Configuring PostgreSQL for development..."
 

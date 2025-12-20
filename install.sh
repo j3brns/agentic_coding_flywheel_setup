@@ -213,6 +213,26 @@ install_asset() {
     local rel_path="$1"
     local dest_path="$2"
 
+    # Security: Validate rel_path doesn't contain path traversal
+    if [[ "$rel_path" == *".."* ]]; then
+        log_error "install_asset: Invalid path (contains '..'): $rel_path"
+        return 1
+    fi
+
+    # Security: Validate dest_path is under expected directories
+    local allowed_prefixes=("$ACFS_HOME" "$TARGET_HOME" "/data")
+    local valid_dest=false
+    for prefix in "${allowed_prefixes[@]}"; do
+        if [[ "$dest_path" == "$prefix"* ]]; then
+            valid_dest=true
+            break
+        fi
+    done
+    if [[ "$valid_dest" != "true" ]]; then
+        log_error "install_asset: Destination outside allowed paths: $dest_path"
+        return 1
+    fi
+
     if [[ -f "$SCRIPT_DIR/$rel_path" ]]; then
         cp "$SCRIPT_DIR/$rel_path" "$dest_path"
     else
