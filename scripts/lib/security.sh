@@ -97,8 +97,24 @@ fetch_checksum() {
         return 1
     fi
 
-    if ! curl -fsSL "$url" 2>/dev/null | calculate_sha256; then
+    local sentinel="__ACFS_EOF_SENTINEL__"
+    local content
+    content="$(
+        curl -fsSL "$url" 2>/dev/null || exit 1
+        printf '%s' "$sentinel"
+    )" || {
         echo "ERROR: Failed to fetch $url" >&2
+        return 1
+    }
+
+    if [[ "$content" != *"$sentinel" ]]; then
+        echo "ERROR: Failed to fetch $url" >&2
+        return 1
+    fi
+    content="${content%"$sentinel"}"
+
+    if ! printf '%s' "$content" | calculate_sha256; then
+        echo "ERROR: Failed to checksum $url" >&2
         return 1
     fi
 }
