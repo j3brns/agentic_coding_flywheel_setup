@@ -15,9 +15,10 @@ fi
 # Configuration
 # ============================================================
 
-# Test results
+# Test result counters (reset in run_smoke_test)
 CRITICAL_PASS=0
 CRITICAL_FAIL=0
+NONCRITICAL_PASS=0
 WARNING_COUNT=0
 
 # Target user (from install.sh or default)
@@ -47,11 +48,18 @@ _smoke_fail() {
 _smoke_warn() {
     local label="$1"
     local note="${2:-}"
-    echo -e "  ${ACFS_YELLOW:-\033[0;33m}⚠️${ACFS_NC:-\033[0m}  $label"
+    echo -e "  ${ACFS_YELLOW:-\033[0;33m}⚠️${ACFS_NC:-\033[0m} $label"
     if [[ -n "$note" ]]; then
         echo -e "     ${ACFS_GRAY:-\033[0;90m}$note${ACFS_NC:-\033[0m}"
     fi
     ((WARNING_COUNT++))
+}
+
+# Non-critical pass (doesn't affect critical count)
+_smoke_info() {
+    local label="$1"
+    echo -e "  ${ACFS_GREEN:-\033[0;32m}✅${ACFS_NC:-\033[0m} $label"
+    ((NONCRITICAL_PASS++))
 }
 
 _smoke_header() {
@@ -220,7 +228,7 @@ _check_onboard() {
 # Check: Agent Mail can respond
 _check_agent_mail() {
     if curl -fsS http://127.0.0.1:8765/health &>/dev/null; then
-        _smoke_pass "Agent Mail: running"
+        _smoke_info "Agent Mail: running"
     else
         _smoke_warn "Agent Mail: not started" "run 'am' to start"
     fi
@@ -241,7 +249,7 @@ _check_stack_tools() {
     done
 
     if [[ ${#missing[@]} -eq 0 ]]; then
-        _smoke_pass "Stack tools: all installed"
+        _smoke_info "Stack tools: all installed"
     else
         _smoke_warn "Stack tools missing: ${missing[*]}" "Some tools may need manual install"
     fi
@@ -250,7 +258,7 @@ _check_stack_tools() {
 # Check: PostgreSQL running
 _check_postgres() {
     if systemctl is-active --quiet postgresql 2>/dev/null; then
-        _smoke_pass "PostgreSQL: running"
+        _smoke_info "PostgreSQL: running"
     elif command -v psql &>/dev/null; then
         _smoke_warn "PostgreSQL: installed but not running" "sudo systemctl start postgresql"
     else
@@ -263,6 +271,12 @@ _check_postgres() {
 # ============================================================
 
 run_smoke_test() {
+    # Reset counters (important if run multiple times in same shell)
+    CRITICAL_PASS=0
+    CRITICAL_FAIL=0
+    NONCRITICAL_PASS=0
+    WARNING_COUNT=0
+
     local start_time
     start_time=$(date +%s)
 

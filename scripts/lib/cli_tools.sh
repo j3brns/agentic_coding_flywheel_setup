@@ -64,7 +64,6 @@ _cli_get_sudo() {
 # Run a command as target user
 _cli_run_as_user() {
     local target_user="${TARGET_USER:-ubuntu}"
-    local target_home="${TARGET_HOME:-/home/$target_user}"
     local cmd="$1"
 
     if [[ "$(whoami)" == "$target_user" ]]; then
