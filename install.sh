@@ -19,6 +19,7 @@
 #   --reset-state     Delete state file and exit (for debugging)
 #   --interactive     Enable interactive prompts for resume decisions
 #   --skip-preflight  Skip pre-flight system validation
+#   --strict          Treat ALL tools as critical (any checksum mismatch aborts)
 # ============================================================
 
 set -euo pipefail
@@ -336,6 +337,12 @@ parse_args() {
                 ;;
             --interactive)
                 export ACFS_INTERACTIVE=true
+                shift
+                ;;
+            --strict)
+                # Treat all tools as critical - any checksum mismatch aborts
+                # Related: bead 8mv, tools.sh ACFS_STRICT_MODE handling
+                export ACFS_STRICT_MODE=true
                 shift
                 ;;
             --skip-preflight)
