@@ -109,6 +109,75 @@ function CodeBlock({ code, language = "bash" }: { code: string; language?: strin
   );
 }
 
+// Expandable prompt card for the command palette section
+function PromptCard({
+  label,
+  desc,
+  prompt,
+  commandKey,
+}: {
+  label: string;
+  desc: string;
+  prompt: string;
+  commandKey: string;
+}) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(prompt);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className={cn(
+      "rounded-lg border transition-all",
+      isExpanded
+        ? "border-primary/30 bg-card/80"
+        : "border-border/50 bg-background/50 hover:border-primary/20"
+    )}>
+      <button
+        type="button"
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="flex w-full items-center justify-between p-3 text-left"
+      >
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <code className="text-xs font-mono text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+              {commandKey}
+            </code>
+            <span className="font-medium text-sm">{label}</span>
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5 truncate">{desc}</p>
+        </div>
+        <ChevronDown
+          className={cn(
+            "h-4 w-4 text-muted-foreground transition-transform shrink-0 ml-2",
+            isExpanded && "rotate-180"
+          )}
+        />
+      </button>
+      {isExpanded && (
+        <div className="border-t border-border/50 p-3">
+          <div className="flex justify-end mb-2">
+            <button
+              onClick={handleCopy}
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+              {copied ? "Copied!" : "Copy prompt"}
+            </button>
+          </div>
+          <p className="text-sm text-muted-foreground whitespace-pre-wrap bg-muted/30 p-3 rounded-lg font-mono">
+            {prompt}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const TECH_STACK = [
   { name: "Next.js 16", desc: "App Router with React 19", category: "Framework" },
   { name: "TypeScript", desc: "Strict mode enabled", category: "Language" },
@@ -157,6 +226,86 @@ const PROMPT_ANALYZE_BEADS = `Re-read AGENTS.md first. Then, can you try using b
 const PROMPT_LEVERAGE_TANSTACK = `Ok I want you to look through the ENTIRE project and look for areas where, if we leveraged one of the many TanStack libraries (e.g., query, table, forms, etc), we could make part of the code much better, simpler, more performant, more maintainable, elegant, shorter, more reliable, etc.`;
 
 const PROMPT_BUILD_UI_UX = `I also want you to do a spectacular job building absolutely world-class UI/UX components, with an intense focus on making the most visually appealing, user-friendly, intuitive, slick, polished, "Stripe level" of quality UI/UX possible for this that leverages the good libraries that are already part of the project.`;
+
+// Additional Analysis & Development prompts
+const PROMPT_FIX_BUG = `I want you to very carefully diagnose and then fix the root underlying cause of the bugs/errors shown here, but fix them FOR REAL, not a superficial "bandaid" fix! Here are the details:`;
+
+const PROMPT_CHECK_ORM_SCHEMAS = `Now reread AGENTS.md, read your README.md, and then I want you to use ultrathink to super carefully and critically read the entire data ORM schema/models and look for any issues or problems, conceptual mistakes, logical errors, or anything that doesn't fit your understanding of the business strategy and accepted best practices for the design and architecture of databases for these sorts of ecommerce/saas projects/companies.`;
+
+const PROMPT_APPLY_UBS = `Read about the ubs tool in AGENTS.md. Now run UBS and investigate and fix literally every single UBS issue once you determine (after reasoned consideration and close inspection) that it's legit.`;
+
+const PROMPT_CREATE_TESTS = `Do we have full unit test coverage without using mocks/fake stuff? What about complete e2e integration test scripts with great, detailed logging? If not, then create a comprehensive and granular set of beads for all this with tasks, subtasks, and dependency structure overlaid with detailed comments.`;
+
+// Documentation prompts
+const PROMPT_COMPLETE_DOCS = `Now I need you to look through the existing documentation in our docusaurus site here and look for the (many, many) instances of functionality in our project that are not described or explained at all yet (or explained inadequately) in the docusaurus site, and then create and expand the documentation in the site to cover these in an exhaustive, intuitive, helpful, useful, pragmatic way. Don't just make a dump of methods, parameters, etc. Add actually well-written narrative explaining what the stuff does, how it is organized, etc. to help another developer understand how it all works so that they can usefully contribute to the system.`;
+
+const PROMPT_IMPROVE_README = `What else can we put in there to make the README longer and more detailed about what we built, why it's useful, how it works, the algorithms/design principles used, etc. This is incremental NEW content, not replacement for what is there already.`;
+
+// Git & Operations prompts
+const PROMPT_DO_GH_FLOW = `Do all the GitHub stuff: commit, deploy, create tag, bump version, release, monitor gh actions, compute checksums, etc.`;
+
+const PROMPT_DO_ALL_OF_IT = `OK, please do ALL of that now. Track work via bd beads (no markdown TODO lists): create/claim/update/close beads as you go so nothing gets lost, and keep communicating via Agent Mail when you start/finish work.`;
+
+// Agent Coordination prompts
+const PROMPT_CHECK_MAIL = `Be sure to check your agent mail and to promptly respond if needed to any messages, and also acknowledge any contact requests; make sure you know the names of all active agents using the MCP Agent Mail system.`;
+
+const PROMPT_INTRODUCE_TO_AGENTS = `Before doing anything else, read ALL of AGENTS.md, then register with MCP Agent Mail and introduce yourself to the other agents.`;
+
+const PROMPT_START_WITH_MAIL = `Be sure to check your agent mail and to promptly respond if needed to any messages; then proceed meticulously with your next assigned beads, working on the tasks systematically and meticulously and tracking your progress via beads and agent mail messages. Don't get stuck in "communication purgatory" where nothing is getting done; be proactive about starting tasks that need to be done, but inform your fellow agents via messages when you do so and mark beads appropriately. When you're really not sure what to do, pick the next bead that you can usefully work on and get started. Make sure to acknowledge all communication requests from other agents and that you are aware of all active agents and their names. Use ultrathink.`;
+
+// Investigation prompts
+const PROMPT_READ_AND_INVESTIGATE = `First read ALL of the AGENTS.md file and README.md file super carefully and understand ALL of both! Then use your code investigation agent mode to fully understand the code, and technical architecture and purpose of the project.`;
+
+const PROMPT_REREAD_AGENTS = `Reread AGENTS.md so it's still fresh in your mind.`;
+
+const PROMPT_USE_BV = `Use bv with the robot flags (see AGENTS.md for info on this) to find the most impactful bead(s) to work on next and then start on it. Remember to mark the beads appropriately and communicate with your fellow agents.`;
+
+// Organized prompt library for the Command Palette section
+const PROMPT_LIBRARY = {
+  analysis: [
+    { key: "fresh_review", label: "Fresh Review", prompt: PROMPT_FRESH_REVIEW, desc: "Self-review new code for bugs" },
+    { key: "check_other_agents", label: "Check Other Agents", prompt: PROMPT_CHECK_OTHER_AGENTS, desc: "Peer review agent work" },
+    { key: "randomly_inspect", label: "Randomly Inspect", prompt: PROMPT_RANDOMLY_INSPECT, desc: "Deep code exploration" },
+    { key: "scrutinize_ui", label: "Scrutinize UI/UX", prompt: PROMPT_SCRUTINIZE_UI, desc: "Polish to Stripe-level quality" },
+    { key: "check_orm", label: "Check ORM/Schemas", prompt: PROMPT_CHECK_ORM_SCHEMAS, desc: "Review database design" },
+    { key: "apply_ubs", label: "Apply UBS", prompt: PROMPT_APPLY_UBS, desc: "Run bug scanner and fix all issues" },
+  ],
+  coding: [
+    { key: "fix_bug", label: "Fix Bug", prompt: PROMPT_FIX_BUG, desc: "Diagnose and fix root cause" },
+    { key: "create_tests", label: "Create Tests", prompt: PROMPT_CREATE_TESTS, desc: "Comprehensive test coverage" },
+    { key: "leverage_tanstack", label: "Leverage TanStack", prompt: PROMPT_LEVERAGE_TANSTACK, desc: "Use TanStack libs where beneficial" },
+    { key: "build_ui_ux", label: "Build UI/UX", prompt: PROMPT_BUILD_UI_UX, desc: "World-class component development" },
+  ],
+  planning: [
+    { key: "combine_plans", label: "Combine Plans", prompt: PROMPT_BEST_OF_ALL_WORLDS, desc: "Synthesize best of 3 AI plans" },
+    { key: "100_ideas", label: "Generate Ideas", prompt: PROMPT_100_IDEAS, desc: "Think of 100, show best 10" },
+    { key: "create_beads", label: "Create Beads", prompt: PROMPT_CREATE_BEADS, desc: "Transform plan into tasks" },
+    { key: "improve_beads", label: "Improve Beads", prompt: PROMPT_REVIEW_BEADS, desc: "Iterate in 'plan space'" },
+    { key: "work_on_beads", label: "Work on Beads", prompt: PROMPT_WORK_ON_BEADS, desc: "Execute tasks in order" },
+    { key: "next_bead", label: "Next Bead", prompt: PROMPT_NEXT_BEAD, desc: "Pick and start next task" },
+    { key: "use_bv", label: "Use BV", prompt: PROMPT_USE_BV, desc: "Find most impactful bead" },
+    { key: "analyze_beads", label: "Analyze & Allocate", prompt: PROMPT_ANALYZE_BEADS, desc: "Distribute work to agents" },
+    { key: "do_all", label: "Do All Of It", prompt: PROMPT_DO_ALL_OF_IT, desc: "Execute everything with tracking" },
+  ],
+  agents: [
+    { key: "new_agent", label: "New Agent", prompt: PROMPT_AGENT_SWARM, desc: "Initialize and join swarm" },
+    { key: "introduce", label: "Introduce", prompt: PROMPT_INTRODUCE_TO_AGENTS, desc: "Register with Agent Mail" },
+    { key: "check_mail", label: "Check Mail", prompt: PROMPT_CHECK_MAIL, desc: "Process agent messages" },
+    { key: "start_with_mail", label: "Start With Mail", prompt: PROMPT_START_WITH_MAIL, desc: "Check mail then work" },
+  ],
+  git: [
+    { key: "git_commit", label: "Git Commit", prompt: PROMPT_GIT_COMMIT, desc: "Smart grouped commits + push" },
+    { key: "gh_flow", label: "GH Flow", prompt: PROMPT_DO_GH_FLOW, desc: "Full GitHub workflow" },
+  ],
+  investigation: [
+    { key: "read_investigate", label: "Read & Investigate", prompt: PROMPT_READ_AND_INVESTIGATE, desc: "Deep project understanding" },
+    { key: "reread_agents", label: "Reread AGENTS.md", prompt: PROMPT_REREAD_AGENTS, desc: "Refresh context" },
+  ],
+  documentation: [
+    { key: "complete_docs", label: "Complete Docs", prompt: PROMPT_COMPLETE_DOCS, desc: "Expand Docusaurus site" },
+    { key: "improve_readme", label: "Improve README", prompt: PROMPT_IMPROVE_README, desc: "Add incremental content" },
+  ],
+};
 
 export default function WorkflowPage() {
   return (
@@ -549,12 +698,29 @@ export default function WorkflowPage() {
             keep agents productively improving code while you handle other things.
           </p>
 
-          <Card className="p-4 border-[oklch(0.72_0.19_145/0.3)] bg-[oklch(0.72_0.19_145/0.08)] mb-6">
-            <p className="text-sm">
-              <strong>The philosophy:</strong> Modern AI models are good enough, and with
-              comprehensive tests, you don&apos;t need to worry about agents &quot;going rogue&quot;.
-              If one makes a mistake, other agents will catch and fix it. Trust the swarm!
-            </p>
+          {/* Philosophy callout */}
+          <Card className="p-5 border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent mb-6">
+            <h4 className="font-semibold mb-3 flex items-center gap-2">
+              <Zap className="h-5 w-5 text-primary" />
+              The Daily Progress Philosophy
+            </h4>
+            <div className="space-y-3 text-sm">
+              <p className="text-muted-foreground">
+                Make some forward progress on <strong className="text-foreground">every active project, every day</strong>,
+                even when you&apos;re too busy to spend real mental bandwidth on all of them.
+              </p>
+              <p className="text-muted-foreground">
+                The models are good enough now, and with comprehensive unit tests and e2e integration
+                tests, you don&apos;t need to worry about agents &quot;going rogue&quot;. Plus, if one of them
+                makes a mistake, the <em>other agents will probably catch and fix it themselves</em>.
+              </p>
+              <p className="text-muted-foreground">
+                <strong className="text-foreground">The reality:</strong> Run these prompts on 7+ projects
+                daily, keeping 3 machines busy constantly. Come back 3+ hours later to see incredible
+                amounts of work done autonomously. The compound effect is incredible — you wake up to
+                meaningful improvements across your entire portfolio!
+              </p>
+            </div>
           </Card>
 
           <div className="space-y-6">
@@ -626,56 +792,102 @@ export default function WorkflowPage() {
         </CollapsibleSection>
 
         {/* Section 7: Command Palette */}
-        <CollapsibleSection title="Step 7: The Command Palette (One-Button Prompts)" icon={Keyboard}>
+        <CollapsibleSection title="Step 7: The Complete Prompt Library" icon={Keyboard}>
           <p className="text-muted-foreground mb-4">
-            Each prompt takes under a second to send using NTM&apos;s command palette feature.
-            Configure your prompts once, then trigger them with a single button press.
+            Each prompt takes under a second to send using NTM&apos;s command palette.
+            Configure once, then trigger with a single button press. Click any prompt to
+            expand and copy.
           </p>
 
-          <div className="grid gap-4 sm:grid-cols-2 mb-6">
-            <Card className="p-4">
-              <h4 className="font-medium mb-2">Analysis & Review</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><code className="bg-muted px-1 rounded">fresh_review</code> — Self-review new code</li>
-                <li><code className="bg-muted px-1 rounded">check_other_agents_work</code> — Peer review</li>
-                <li><code className="bg-muted px-1 rounded">randomly_inspect_code</code> — Deep exploration</li>
-                <li><code className="bg-muted px-1 rounded">scrutinize_ui</code> — UI/UX polish</li>
-              </ul>
-            </Card>
-
-            <Card className="p-4">
-              <h4 className="font-medium mb-2">Planning & Beads</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><code className="bg-muted px-1 rounded">turn_plan_into_beads</code> — Create tasks</li>
-                <li><code className="bg-muted px-1 rounded">improve_beads</code> — Refine in &quot;plan space&quot;</li>
-                <li><code className="bg-muted px-1 rounded">work_on_beads</code> — Execute tasks</li>
-                <li><code className="bg-muted px-1 rounded">next_bead</code> — Pick and start next task</li>
-              </ul>
-            </Card>
-
-            <Card className="p-4">
-              <h4 className="font-medium mb-2">Agent Coordination</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><code className="bg-muted px-1 rounded">default_new_agent</code> — Initialize an agent</li>
-                <li><code className="bg-muted px-1 rounded">check_mail</code> — Process agent mail</li>
-                <li><code className="bg-muted px-1 rounded">analyze_beads_and_allocate</code> — Distribute work</li>
-                <li><code className="bg-muted px-1 rounded">introduce_to_agents</code> — Join the swarm</li>
-              </ul>
-            </Card>
-
-            <Card className="p-4">
-              <h4 className="font-medium mb-2">Git & Operations</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><code className="bg-muted px-1 rounded">git_commit</code> — Smart grouped commits</li>
-                <li><code className="bg-muted px-1 rounded">reread_agents_md</code> — Refresh context</li>
-                <li><code className="bg-muted px-1 rounded">ultrathink</code> — Force deep reasoning</li>
-              </ul>
-            </Card>
+          {/* Analysis & Review */}
+          <div className="mb-6">
+            <h4 className="font-semibold mb-3 flex items-center gap-2">
+              <Eye className="h-4 w-4 text-primary" />
+              Analysis & Review
+            </h4>
+            <div className="grid gap-2">
+              {PROMPT_LIBRARY.analysis.map((p) => (
+                <PromptCard key={p.key} label={p.label} desc={p.desc} prompt={p.prompt} commandKey={p.key} />
+              ))}
+            </div>
           </div>
 
-          <div className="p-4 rounded-lg border border-primary/20 bg-primary/5">
-            <h4 className="font-medium mb-2">Example: The Git Commit Prompt</h4>
-            <CodeBlock code={PROMPT_GIT_COMMIT} language="prompt" />
+          {/* Coding & Development */}
+          <div className="mb-6">
+            <h4 className="font-semibold mb-3 flex items-center gap-2">
+              <Terminal className="h-4 w-4 text-primary" />
+              Coding & Development
+            </h4>
+            <div className="grid gap-2">
+              {PROMPT_LIBRARY.coding.map((p) => (
+                <PromptCard key={p.key} label={p.label} desc={p.desc} prompt={p.prompt} commandKey={p.key} />
+              ))}
+            </div>
+          </div>
+
+          {/* Planning & Beads */}
+          <div className="mb-6">
+            <h4 className="font-semibold mb-3 flex items-center gap-2">
+              <GitBranch className="h-4 w-4 text-primary" />
+              Planning & Beads
+            </h4>
+            <div className="grid gap-2">
+              {PROMPT_LIBRARY.planning.map((p) => (
+                <PromptCard key={p.key} label={p.label} desc={p.desc} prompt={p.prompt} commandKey={p.key} />
+              ))}
+            </div>
+          </div>
+
+          {/* Agent Coordination */}
+          <div className="mb-6">
+            <h4 className="font-semibold mb-3 flex items-center gap-2">
+              <Users className="h-4 w-4 text-primary" />
+              Agent Coordination
+            </h4>
+            <div className="grid gap-2">
+              {PROMPT_LIBRARY.agents.map((p) => (
+                <PromptCard key={p.key} label={p.label} desc={p.desc} prompt={p.prompt} commandKey={p.key} />
+              ))}
+            </div>
+          </div>
+
+          {/* Git & Operations */}
+          <div className="mb-6">
+            <h4 className="font-semibold mb-3 flex items-center gap-2">
+              <GitCommit className="h-4 w-4 text-primary" />
+              Git & Operations
+            </h4>
+            <div className="grid gap-2">
+              {PROMPT_LIBRARY.git.map((p) => (
+                <PromptCard key={p.key} label={p.label} desc={p.desc} prompt={p.prompt} commandKey={p.key} />
+              ))}
+            </div>
+          </div>
+
+          {/* Investigation */}
+          <div className="mb-6">
+            <h4 className="font-semibold mb-3 flex items-center gap-2">
+              <Brain className="h-4 w-4 text-primary" />
+              Investigation
+            </h4>
+            <div className="grid gap-2">
+              {PROMPT_LIBRARY.investigation.map((p) => (
+                <PromptCard key={p.key} label={p.label} desc={p.desc} prompt={p.prompt} commandKey={p.key} />
+              ))}
+            </div>
+          </div>
+
+          {/* Documentation */}
+          <div className="mb-6">
+            <h4 className="font-semibold mb-3 flex items-center gap-2">
+              <Layers className="h-4 w-4 text-primary" />
+              Documentation
+            </h4>
+            <div className="grid gap-2">
+              {PROMPT_LIBRARY.documentation.map((p) => (
+                <PromptCard key={p.key} label={p.label} desc={p.desc} prompt={p.prompt} commandKey={p.key} />
+              ))}
+            </div>
           </div>
 
           <SimplerGuide>
@@ -684,7 +896,16 @@ export default function WorkflowPage() {
               to <code className="bg-muted px-1 rounded">~/.config/ntm/prompts.yaml</code> and
               bind a keyboard shortcut to open the palette. Each prompt can be triggered
               in any active agent session with a single keypress.
+              <br /><br />
+              For physical command palettes (like the StreamDeck or cheaper Temu alternatives),
+              you can bind each button to type and send a specific prompt to the active terminal.
             </GuideExplain>
+
+            <GuideTip>
+              <strong>Hardware tip:</strong> A small programmable keypad (~$60 on Temu) can be
+              configured to send any of these prompts with a single button press. Keep one next
+              to each of your machines for instant agent commands.
+            </GuideTip>
           </SimplerGuide>
         </CollapsibleSection>
 
