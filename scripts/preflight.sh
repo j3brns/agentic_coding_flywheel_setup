@@ -195,7 +195,18 @@ check_disk() {
 
     if [[ -z "$free_kb" ]]; then
         # Fallback for systems without --output support (macOS, older Linux)
-        free_kb=$(df / | awk 'NR==2 {print $4}')
+        # On macOS, df shows 512-byte blocks, so use -k for KB
+        if [[ "$(uname)" == "Darwin" ]]; then
+            free_kb=$(df -k / | awk 'NR==2 {print $4}')
+        else
+            free_kb=$(df / | awk 'NR==2 {print $4}')
+        fi
+    fi
+
+    # Handle non-numeric or empty values
+    if [[ -z "$free_kb" ]] || ! [[ "$free_kb" =~ ^[0-9]+$ ]]; then
+        warn "Cannot determine disk space" "df command returned unexpected output"
+        return
     fi
 
     local free_gb=$((free_kb / 1024 / 1024))

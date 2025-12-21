@@ -195,11 +195,11 @@ state_write_atomic() {
 
     # Validate arguments
     if [[ -z "$file_path" ]]; then
-        [[ -n "${log_error:-}" ]] && log_error "state_write_atomic: file path required"
+        declare -f log_error &>/dev/null && log_error "state_write_atomic: file path required"
         return 3
     fi
     if [[ -z "$content" ]]; then
-        [[ -n "${log_error:-}" ]] && log_error "state_write_atomic: content required"
+        declare -f log_error &>/dev/null && log_error "state_write_atomic: content required"
         return 3
     fi
 
@@ -208,7 +208,7 @@ state_write_atomic() {
     # Ensure target directory exists
     if [[ ! -d "$target_dir" ]]; then
         if ! mkdir -p "$target_dir" 2>/dev/null; then
-            [[ -n "${log_error:-}" ]] && log_error "state_write_atomic: cannot create directory $target_dir"
+            declare -f log_error &>/dev/null && log_error "state_write_atomic: cannot create directory $target_dir"
             return 2
         fi
     fi
@@ -217,7 +217,7 @@ state_write_atomic() {
     local available_kb
     available_kb=$(df -k "$target_dir" 2>/dev/null | awk 'NR==2 {print $4}')
     if [[ -n "$available_kb" ]] && [[ "$available_kb" -lt 1024 ]]; then
-        [[ -n "${log_error:-}" ]] && log_error "state_write_atomic: insufficient disk space (${available_kb}KB available, 1024KB minimum)"
+        declare -f log_error &>/dev/null && log_error "state_write_atomic: insufficient disk space (${available_kb}KB available, 1024KB minimum)"
         return 1
     fi
 
@@ -240,13 +240,13 @@ state_write_atomic() {
             # Check if we can write a small test file
             if ! echo "test" > "${target_dir}/.disktest.$$" 2>/dev/null; then
                 rm -f "${target_dir}/.disktest.$$" 2>/dev/null
-                [[ -n "${log_error:-}" ]] && log_error "state_write_atomic: disk full or write error"
+                declare -f log_error &>/dev/null && log_error "state_write_atomic: disk full or write error"
                 return 1
             fi
             rm -f "${target_dir}/.disktest.$$" 2>/dev/null
         fi
 
-        [[ -n "${log_error:-}" ]] && log_error "state_write_atomic: failed to write temp file"
+        declare -f log_error &>/dev/null && log_error "state_write_atomic: failed to write temp file"
         return 1
     fi
 
@@ -268,11 +268,11 @@ state_write_atomic() {
 
         # Check for permission issues
         if [[ ! -w "$target_dir" ]] || [[ -f "$file_path" && ! -w "$file_path" ]]; then
-            [[ -n "${log_error:-}" ]] && log_error "state_write_atomic: permission denied on $file_path"
+            declare -f log_error &>/dev/null && log_error "state_write_atomic: permission denied on $file_path"
             return 2
         fi
 
-        [[ -n "${log_error:-}" ]] && log_error "state_write_atomic: atomic rename failed (error $mv_err)"
+        declare -f log_error &>/dev/null && log_error "state_write_atomic: atomic rename failed (error $mv_err)"
         return 1
     fi
 
