@@ -1,7 +1,7 @@
 # Agentic Coding Flywheel Setup (ACFS)
 
 ![Version](https://img.shields.io/badge/Version-0.1.0-bd93f9?style=for-the-badge)
-![Platform](https://img.shields.io/badge/Platform-Ubuntu%2024.04+-6272a4?style=for-the-badge)
+![Platform](https://img.shields.io/badge/Platform-Ubuntu%2025.10-6272a4?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-50fa7b?style=for-the-badge)
 ![Shell](https://img.shields.io/badge/Shell-Bash-ff79c6?style=for-the-badge)
 
@@ -79,7 +79,7 @@ graph LR
     end
 
     subgraph vps ["Fresh VPS"]
-        UBUNTU["Ubuntu 24.04+"]
+        UBUNTU["Ubuntu 25.10"]
         INSTALLER["install.sh"]
         CONFIGURED["Configured VPS"]
     end
@@ -160,7 +160,7 @@ flowchart TB
   end
 
   %% Target VPS
-  subgraph V["Target VPS (Ubuntu 24.04+ / 25.x)"]
+  subgraph V["Target VPS (Ubuntu 25.10, auto-upgraded)"]
     Run["Run install.sh"]
     Verify["Verified upstream installers<br/>(security.sh + checksums.yaml)"]
     AcfsHome["~/.acfs/<br/>configs + scripts + state.json"]
@@ -496,7 +496,7 @@ curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/agentic_coding_f
 ```
 
 This checks:
-- OS compatibility (Ubuntu 22.04+, 24.04+ recommended)
+- OS compatibility (Ubuntu 22.04+; installer upgrades to 25.10)
 - Architecture (x86_64 or ARM64)
 - Memory and disk space
 - Network connectivity to required URLs
@@ -1052,7 +1052,7 @@ OS detection and validation:
 
 ```bash
 detect_os()      # Sets OS_ID, OS_VERSION, OS_CODENAME
-validate_os()    # Checks for Ubuntu 24.04+
+validate_os()    # Checks for Ubuntu 25.10 (or upgrade path)
 is_fresh_vps()   # Heuristic detection of fresh VPS
 get_arch()       # Returns amd64/arm64
 is_wsl()         # Detects WSL
@@ -1179,7 +1179,7 @@ jobs:
     - Lints all bash scripts with ShellCheck
 
   integration:
-    - Matrix tests across Ubuntu 24.04, 24.10, 25.04
+    - Matrix tests across Ubuntu 24.04, 24.10, 25.04, 25.10
     - Runs full installation in Docker
     - Verifies all tools installed correctly
     - Runs acfs doctor to confirm health
@@ -1235,7 +1235,7 @@ ACFS works on any Ubuntu VPS with SSH key login. Here are recommended providers 
 
 | Requirement | Minimum | Recommended |
 |-------------|---------|-------------|
-| **OS** | Ubuntu 24.04 LTS | Ubuntu 24.x or newer |
+| **OS** | Ubuntu 22.04+ (auto-upgraded) | Ubuntu 25.10 |
 | **RAM** | 32GB (tight) | 48-64GB |
 | **Storage** | 250GB NVMe SSD | 300GB+ NVMe SSD |
 | **CPU** | 12 vCPU | 16 vCPU |
