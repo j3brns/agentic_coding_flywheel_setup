@@ -462,7 +462,7 @@ export const getOrCreateUserId = (): string => {
  * Track key conversions (dual client + server-side for reliability)
  */
 export const trackConversion = (
-  conversionType: 'wizard_start' | 'wizard_complete' | 'vps_created' | 'installer_run',
+  conversionType: 'wizard_start' | 'wizard_complete' | 'vps_created' | 'installer_run' | 'learning_hub_started',
   value?: number
 ): void => {
   const params = {

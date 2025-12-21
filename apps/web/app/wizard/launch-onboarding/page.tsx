@@ -334,7 +334,7 @@ export default function LaunchOnboardingPage() {
             that build features while you sleep.
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Link href="/learn">
+            <Link href="/learn" onClick={() => trackConversion('learning_hub_started')}>
               <Button variant="outline" size="lg" className="w-full sm:w-auto">
                 <BookOpen className="mr-2 h-4 w-4" />
                 Start with Basics
