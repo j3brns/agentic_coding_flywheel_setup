@@ -20,6 +20,8 @@
 #   --reset-state     Delete state file and exit (for debugging)
 #   --interactive     Enable interactive prompts for resume decisions
 #   --skip-preflight  Skip pre-flight system validation
+#   --skip-ubuntu-upgrade  Skip automatic Ubuntu version upgrade
+#   --target-ubuntu=VER    Set target Ubuntu version (default: 25.10)
 #   --strict          Treat ALL tools as critical (any checksum mismatch aborts)
 #   --list-modules    List available modules and exit
 #   --print-plan      Print execution plan and exit (no installs)
@@ -68,6 +70,10 @@ RESET_STATE_ONLY=false
 
 # Preflight options
 SKIP_PREFLIGHT=false
+
+# Ubuntu upgrade options (nb4: integrate upgrade phase)
+SKIP_UBUNTU_UPGRADE=false
+TARGET_UBUNTU_VERSION="25.10"
 
 # Target user configuration
 # When running as root, we install for ubuntu user, not root
@@ -441,6 +447,25 @@ parse_args() {
             --skip-preflight)
                 SKIP_PREFLIGHT=true
                 shift
+                ;;
+            --skip-ubuntu-upgrade)
+                # Skip automatic Ubuntu version upgrade (nb4)
+                SKIP_UBUNTU_UPGRADE=true
+                shift
+                ;;
+            --target-ubuntu|--target-ubuntu=*)
+                # Set target Ubuntu version for auto-upgrade (nb4)
+                if [[ "$1" == "--target-ubuntu" ]]; then
+                    if [[ -z "${2:-}" ]]; then
+                        log_fatal "--target-ubuntu requires a version (e.g., --target-ubuntu 25.10)"
+                    fi
+                    TARGET_UBUNTU_VERSION="$2"
+                    shift 2
+                else
+                    # Handle --target-ubuntu=25.10 format
+                    TARGET_UBUNTU_VERSION="${1#*=}"
+                    shift
+                fi
                 ;;
             --list-modules)
                 LIST_MODULES=true
@@ -822,7 +847,8 @@ bootstrap_repo_archive() {
         return 1
     fi
 
-    tmp_archive="$(mktemp "/tmp/acfs-archive-${ref_safe}.XXXXXX.tar.gz" 2>/dev/null)" || {
+    # mktemp portability: BSD mktemp requires Xs at end of template; tar doesn't need a .tar.gz suffix.
+    tmp_archive="$(mktemp "/tmp/acfs-archive-${ref_safe}.XXXXXX" 2>/dev/null)" || {
         log_error "Failed to create temp file for bootstrap archive"
         return 1
     }
