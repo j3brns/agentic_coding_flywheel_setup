@@ -22,7 +22,9 @@
     "test": "bun test",
     "clean": "rm -rf dist",
     "generate": "bun run src/generate.ts",
-    "generate:dry": "bun run src/generate.ts --dry-run --verbose"
+    "generate:dry": "bun run src/generate.ts --dry-run --verbose",
+    "generate:validate": "bun run src/generate.ts --validate",
+    "generate:diff": "bun run src/generate.ts --diff"
   },
   "dependencies": {
     "yaml": "^2.7.0",

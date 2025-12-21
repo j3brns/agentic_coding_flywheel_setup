@@ -147,7 +147,7 @@ _check_languages() {
     fi
 
     # Check go
-    if command -v go &>/dev/null; then
+    if command -v go &>/dev/null || [[ -x "/usr/local/go/bin/go" ]]; then
         :
     else
         missing+=("go")

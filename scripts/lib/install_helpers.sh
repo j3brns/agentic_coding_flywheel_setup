@@ -19,11 +19,17 @@ fi
 # ------------------------------------------------------------
 # Selection state (populated by parse_args or manifest selection)
 # ------------------------------------------------------------
-ONLY_MODULES=()
-ONLY_PHASES=()
-SKIP_MODULES=()
-NO_DEPS="false"
-PRINT_PLAN="false"
+if [[ "${ONLY_MODULES+x}" != "x" ]]; then
+    ONLY_MODULES=()
+fi
+if [[ "${ONLY_PHASES+x}" != "x" ]]; then
+    ONLY_PHASES=()
+fi
+if [[ "${SKIP_MODULES+x}" != "x" ]]; then
+    SKIP_MODULES=()
+fi
+: "${NO_DEPS:=false}"
+: "${PRINT_PLAN:=false}"
 
 # ------------------------------------------------------------
 # Command execution helpers (heredoc-friendly)

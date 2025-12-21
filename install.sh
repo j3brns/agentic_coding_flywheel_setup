@@ -28,7 +28,10 @@ set -euo pipefail
 # Configuration
 # ============================================================
 ACFS_VERSION="0.1.0"
-ACFS_RAW="https://raw.githubusercontent.com/Dicklesworthstone/agentic_coding_flywheel_setup/main"
+ACFS_REPO_OWNER="Dicklesworthstone"
+ACFS_REPO_NAME="agentic_coding_flywheel_setup"
+ACFS_REF="${ACFS_REF:-main}"
+ACFS_RAW="https://raw.githubusercontent.com/${ACFS_REPO_OWNER}/${ACFS_REPO_NAME}/${ACFS_REF}"
 # Note: ACFS_HOME is set after TARGET_HOME is determined
 ACFS_LOG_DIR="/var/log/acfs"
 # SCRIPT_DIR is empty when running via curl|bash (BASH_SOURCE is unset)
@@ -376,7 +379,9 @@ run_preflight_checks() {
     local preflight_script=""
 
     # Try to find preflight script in different locations
-    if [[ -n "${SCRIPT_DIR:-}" ]] && [[ -f "$SCRIPT_DIR/scripts/preflight.sh" ]]; then
+    if [[ -n "${ACFS_BOOTSTRAP_DIR:-}" ]] && [[ -f "$ACFS_BOOTSTRAP_DIR/scripts/preflight.sh" ]]; then
+        preflight_script="$ACFS_BOOTSTRAP_DIR/scripts/preflight.sh"
+    elif [[ -n "${SCRIPT_DIR:-}" ]] && [[ -f "$SCRIPT_DIR/scripts/preflight.sh" ]]; then
         preflight_script="$SCRIPT_DIR/scripts/preflight.sh"
     elif [[ -f "./scripts/preflight.sh" ]]; then
         preflight_script="./scripts/preflight.sh"
@@ -435,6 +440,161 @@ acfs_is_retryable_curl_exit_code() {
     esac
 }
 
+acfs_curl_with_retry() {
+    local url="$1"
+    local output_path="$2"
+
+    if [[ -z "$url" || -z "$output_path" ]]; then
+        log_error "acfs_curl_with_retry: missing url or output path"
+        return 1
+    fi
+
+    local attempt delay exit_code
+    local max_attempts="${#ACFS_CURL_RETRY_DELAYS[@]}"
+    if (( max_attempts == 0 )); then
+        ACFS_CURL_RETRY_DELAYS=(0 5 15)
+        max_attempts="${#ACFS_CURL_RETRY_DELAYS[@]}"
+    fi
+
+    for ((attempt=0; attempt<max_attempts; attempt++)); do
+        delay="${ACFS_CURL_RETRY_DELAYS[$attempt]}"
+        if (( attempt > 0 )); then
+            log_detail "Retry ${attempt}/${max_attempts} (waiting ${delay}s)..."
+            sleep "$delay"
+        fi
+
+        if acfs_curl -o "$output_path" "$url"; then
+            return 0
+        fi
+
+        exit_code=$?
+        if ! acfs_is_retryable_curl_exit_code "$exit_code"; then
+            return "$exit_code"
+        fi
+    done
+
+    return 1
+}
+
+acfs_calculate_file_sha256() {
+    local file_path="$1"
+
+    if command_exists sha256sum; then
+        sha256sum "$file_path" | cut -d' ' -f1
+        return 0
+    fi
+
+    if command_exists shasum; then
+        shasum -a 256 "$file_path" | cut -d' ' -f1
+        return 0
+    fi
+
+    log_error "No SHA256 tool available (need sha256sum or shasum)"
+    return 1
+}
+
+bootstrap_repo_archive() {
+    if [[ -n "${SCRIPT_DIR:-}" ]]; then
+        return 0
+    fi
+
+    local ref="$ACFS_REF"
+    local archive_url="https://github.com/${ACFS_REPO_OWNER}/${ACFS_REPO_NAME}/archive/${ref}.tar.gz"
+    local ref_safe="${ref//[^a-zA-Z0-9._-]/_}"
+    local tmp_archive
+    local tmp_dir
+
+    if ! command_exists tar; then
+        log_error "Bootstrap requires tar (install tar or run from a local checkout)"
+        return 1
+    fi
+
+    tmp_archive="$(mktemp "/tmp/acfs-archive-${ref_safe}.XXXXXX.tar.gz" 2>/dev/null)" || {
+        log_error "Failed to create temp file for bootstrap archive"
+        return 1
+    }
+
+    tmp_dir="$(mktemp -d "/tmp/acfs-bootstrap-${ref_safe}.XXXXXX" 2>/dev/null)" || {
+        log_error "Failed to create temp directory for bootstrap extract"
+        return 1
+    }
+
+    log_step "Bootstrapping ACFS archive (${ref})"
+    log_detail "Downloading ${archive_url}"
+
+    if ! acfs_curl_with_retry "$archive_url" "$tmp_archive"; then
+        log_error "Failed to download ACFS archive. Try again, or pin ACFS_REF to a tag/sha."
+        return 1
+    fi
+
+    log_detail "Extracting runtime assets"
+    if ! tar -xzf "$tmp_archive" -C "$tmp_dir" --strip-components=1 \
+        --wildcards --wildcards-match-slash \
+        "*/scripts/lib/**" \
+        "*/scripts/generated/**" \
+        "*/scripts/preflight.sh" \
+        "*/acfs/**" \
+        "*/checksums.yaml" \
+        "*/acfs.manifest.yaml"; then
+        log_error "Failed to extract ACFS bootstrap archive (tar error)"
+        return 1
+    fi
+
+    if [[ ! -f "$tmp_dir/acfs.manifest.yaml" ]] || [[ ! -f "$tmp_dir/checksums.yaml" ]]; then
+        log_error "Bootstrap archive missing required manifest/checksums files"
+        return 1
+    fi
+
+    if [[ ! -f "$tmp_dir/scripts/generated/manifest_index.sh" ]]; then
+        log_error "Bootstrap archive missing scripts/generated/manifest_index.sh"
+        return 1
+    fi
+
+    log_detail "Validating extracted shell scripts (bash -n)"
+    local shellcheck_failed=false
+    while IFS= read -r -d '' script_file; do
+        if ! bash -n "$script_file" >/dev/null 2>&1; then
+            log_error "Syntax error in extracted script: $script_file"
+            shellcheck_failed=true
+            break
+        fi
+    done < <(find "$tmp_dir" -type f -name "*.sh" -print0)
+
+    if [[ "$shellcheck_failed" == "true" ]]; then
+        log_error "Bootstrap validation failed. Retry or pin to a known-good tag/sha."
+        return 1
+    fi
+
+    local manifest_sha expected_sha
+    manifest_sha="$(acfs_calculate_file_sha256 "$tmp_dir/acfs.manifest.yaml")" || return 1
+    expected_sha="$(grep -E '^ACFS_MANIFEST_SHA256=' "$tmp_dir/scripts/generated/manifest_index.sh" | head -n 1 | cut -d'=' -f2 | tr -d '\"')"
+
+    if [[ -z "$expected_sha" ]]; then
+        log_error "Bootstrap manifest index missing ACFS_MANIFEST_SHA256"
+        return 1
+    fi
+
+    if [[ "$manifest_sha" != "$expected_sha" ]]; then
+        log_error "Bootstrap mismatch: generated scripts do not match manifest."
+        log_detail "Expected: $expected_sha"
+        log_detail "Actual:   $manifest_sha"
+        log_detail "Fix: retry or pin ACFS_REF to a tag/sha to avoid mixed refs."
+        return 1
+    fi
+
+    ACFS_BOOTSTRAP_DIR="$tmp_dir"
+    ACFS_LIB_DIR="$tmp_dir/scripts/lib"
+    ACFS_GENERATED_DIR="$tmp_dir/scripts/generated"
+    ACFS_ASSETS_DIR="$tmp_dir/acfs"
+    ACFS_CHECKSUMS_YAML="$tmp_dir/checksums.yaml"
+    ACFS_MANIFEST_YAML="$tmp_dir/acfs.manifest.yaml"
+
+    export ACFS_BOOTSTRAP_DIR ACFS_LIB_DIR ACFS_GENERATED_DIR ACFS_ASSETS_DIR ACFS_CHECKSUMS_YAML ACFS_MANIFEST_YAML
+
+    log_success "Bootstrap archive ready"
+    return 0
+}
+
 install_asset() {
     local rel_path="$1"
     local dest_path="$2"
@@ -467,7 +627,9 @@ install_asset() {
         return 1
     fi
 
-    if [[ -f "$SCRIPT_DIR/$rel_path" ]]; then
+    if [[ -n "${ACFS_BOOTSTRAP_DIR:-}" ]] && [[ -f "$ACFS_BOOTSTRAP_DIR/$rel_path" ]]; then
+        cp "$ACFS_BOOTSTRAP_DIR/$rel_path" "$dest_path"
+    elif [[ -f "$SCRIPT_DIR/$rel_path" ]]; then
         cp "$SCRIPT_DIR/$rel_path" "$dest_path"
     else
         acfs_curl -o "$dest_path" "$ACFS_RAW/$rel_path"
@@ -1040,8 +1202,45 @@ install_cli_tools() {
     log_detail "Installing optional apt packages"
     try_step "Installing optional apt packages" $SUDO apt-get install -y \
         lsd eza bat fd-find btop dust neovim \
-        docker.io docker-compose-plugin \
-        lazygit || true
+        docker.io docker-compose-plugin || true
+
+    # Robust lazygit install (apt or binary fallback)
+    if ! command_exists lazygit; then
+        log_detail "Installing lazygit..."
+        if ! $SUDO apt-get install -y lazygit >/dev/null 2>&1; then
+            local arch=""
+            case "$(uname -m)" in
+                x86_64) arch="x86_64" ;;
+                aarch64|arm64) arch="arm64" ;;
+            esac
+            if [[ -n "$arch" ]]; then
+                local lg_ver="0.44.1"
+                local lg_url="https://github.com/jesseduffield/lazygit/releases/download/v${lg_ver}/lazygit_${lg_ver}_Linux_${arch}.tar.gz"
+                if acfs_curl "$lg_url" -o /tmp/lazygit.tar.gz 2>/dev/null; then
+                    $SUDO tar -xzf /tmp/lazygit.tar.gz -C /usr/local/bin lazygit
+                    rm -f /tmp/lazygit.tar.gz
+                fi
+            fi
+        fi
+    fi
+
+    # Robust lazydocker install (binary fallback)
+    if ! command_exists lazydocker; then
+        log_detail "Installing lazydocker..."
+        local arch=""
+        case "$(uname -m)" in
+            x86_64) arch="x86_64" ;;
+            aarch64|arm64) arch="arm64" ;;
+        esac
+        if [[ -n "$arch" ]]; then
+            local ld_ver="0.23.3"
+            local ld_url="https://github.com/jesseduffield/lazydocker/releases/download/v${ld_ver}/lazydocker_${ld_ver}_Linux_${arch}.tar.gz"
+            if acfs_curl "$ld_url" -o /tmp/lazydocker.tar.gz 2>/dev/null; then
+                $SUDO tar -xzf /tmp/lazydocker.tar.gz -C /usr/local/bin lazydocker
+                rm -f /tmp/lazydocker.tar.gz
+            fi
+        fi
+    fi
 
     # Add user to docker group
     try_step "Adding $TARGET_USER to docker group" $SUDO usermod -aG docker "$TARGET_USER" || true
@@ -1769,6 +1968,10 @@ $summary_content"
 # ============================================================
 main() {
     parse_args "$@"
+
+    if [[ -z "${SCRIPT_DIR:-}" ]]; then
+        bootstrap_repo_archive
+    fi
 
     # Handle --reset-state: just delete state file and exit
     if [[ "$RESET_STATE_ONLY" == "true" ]]; then
