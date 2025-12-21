@@ -84,9 +84,9 @@ const PROVIDER_GUIDES = [
       "Go to contabo.com/en/vps and pick a plan with at least 16GB RAM (32GB ideal)",
       'Click "Configure" and select your preferred region (US or EU)',
       'Under "Image", select Ubuntu 24.04 or 25.x',
-      'In the order form, paste your SSH public key when prompted',
       "Complete checkout (servers activate within minutes)",
       'Go to "Your services" > "VPS control" to find your IP address',
+      'Click "Manage" on your VPS, then "SSH keys" to add your public key',
     ],
   },
   {
