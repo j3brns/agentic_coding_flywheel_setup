@@ -588,6 +588,15 @@ export const jargonDictionary: Record<string, JargonTerm> = {
     related: ["public-key", "ssh", "ssh-key"],
   },
 
+  "ssh-key": {
+    term: "SSH Key",
+    short: "A cryptographic key pair used for secure, passwordless authentication",
+    long: "An SSH key is a pair of cryptographic keys used for secure authentication: a public key (which you share) and a private key (which stays secret on your computer). Instead of typing passwords, SSH keys prove your identity mathematically. They're more secure than passwords and can't be guessed or brute-forced. When you 'add your SSH key' to a VPS, you're giving it your public key so it recognizes you.",
+    analogy: "Like a special lock where you have the only key that fits. You give copies of the lock (public key) to servers, and they know anyone who can open it (with the private key) is really you.",
+    why: "SSH keys are the standard for secure server access. They're faster than passwords (no typing), more secure (can't be guessed), and enable automation (scripts can authenticate without human input).",
+    related: ["public-key", "private-key", "ssh"],
+  },
+
   "ip-address": {
     term: "IP Address",
     short: "A unique number that identifies a computer on the internet (like 192.168.1.100)",
