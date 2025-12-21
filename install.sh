@@ -452,7 +452,7 @@ acfs_load_upstream_checksums() {
     done <<< "$content"
 
     local required_tools=(
-        atuin bun bv caam cass cm mcp_agent_mail ntm ohmyzsh rust slb ubs uv zoxide
+        atuin bun bv caam cass claude cm mcp_agent_mail ntm ohmyzsh rust slb ubs uv zoxide
     )
     local missing=false
     local tool
@@ -937,8 +937,16 @@ install_agents() {
     fi
 
     # Claude Code (install as target user)
-    log_detail "Installing Claude Code for $TARGET_USER"
-    run_as_target "$bun_bin" install -g @anthropic-ai/claude-code@latest 2>/dev/null || true
+    local claude_bin_local="$TARGET_HOME/.local/bin/claude"
+    local claude_bin_bun="$TARGET_HOME/.bun/bin/claude"
+    if [[ -x "$claude_bin_local" ]]; then
+        log_detail "Claude Code already installed ($claude_bin_local)"
+    elif [[ -x "$claude_bin_bun" ]]; then
+        log_detail "Claude Code already installed ($claude_bin_bun)"
+    else
+        log_detail "Installing Claude Code (native) for $TARGET_USER"
+        acfs_run_verified_upstream_script_as_target "claude" "bash" stable
+    fi
 
     # Codex CLI (install as target user)
     log_detail "Installing Codex CLI for $TARGET_USER"
@@ -1538,6 +1546,7 @@ main() {
         echo "  - uv: https://astral.sh/uv"
         echo "  - Atuin: https://atuin.sh"
         echo "  - Zoxide: https://github.com/ajeetdsouza/zoxide"
+        echo "  - Claude Code (native): https://claude.ai/install.sh"
         echo "  - NTM: https://github.com/Dicklesworthstone/ntm"
         echo "  - MCP Agent Mail: https://github.com/Dicklesworthstone/mcp_agent_mail"
         echo "  - UBS: https://github.com/Dicklesworthstone/ultimate_bug_scanner"
