@@ -30,12 +30,12 @@ CLOUD_CLIS=(
 # Helper Functions
 # ============================================================
 
-# Security: Validate username contains only safe characters (alphanumeric + underscore)
+# Security: Validate username contains only safe characters (alphanumeric + underscore + hyphen)
 # Prevents SQL injection and command injection via username
 _cloud_validate_username() {
     local username="$1"
-    if [[ ! "$username" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
-        log_error "Invalid username format: $username (must be alphanumeric + underscore)"
+    if [[ ! "$username" =~ ^[a-zA-Z_][a-zA-Z0-9_-]*$ ]]; then
+        log_error "Invalid username format: $username (must be alphanumeric + underscore/hyphen)"
         return 1
     fi
     # Also check reasonable length

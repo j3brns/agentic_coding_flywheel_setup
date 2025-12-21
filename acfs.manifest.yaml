@@ -427,12 +427,21 @@ modules:
       run_as: current
       command: "command -v psql"
     install:
+      - |
+        mkdir -p /etc/apt/keyrings
+        curl --proto '=https' --proto-redir '=https' -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /etc/apt/keyrings/postgresql.gpg
+        CODENAME=$(lsb_release -cs 2>/dev/null || echo "noble")
+        case "$CODENAME" in
+          oracular|plucky) CODENAME="noble" ;;
+        esac
+        echo "deb [signed-by=/etc/apt/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt ${CODENAME}-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list
+      - apt-get update
       - apt-get install -y postgresql-18
     verify:
       - psql --version
       - systemctl status postgresql --no-pager || true
     notes:
-      - "Add PGDG apt repo if postgresql-18 not available"
+      - "Uses official PGDG apt repository"
 
   - id: cloud.wrangler
     description: Cloudflare Wrangler CLI

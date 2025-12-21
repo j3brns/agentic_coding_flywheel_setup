@@ -63,6 +63,44 @@ install_db_postgres18() {
     log_step "Installing db.postgres18"
 
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        log_info "dry-run: install: mkdir -p /etc/apt/keyrings (root)"
+    else
+        if ! run_as_root_shell <<'INSTALL_DB_POSTGRES18'
+mkdir -p /etc/apt/keyrings
+curl --proto '=https' --proto-redir '=https' -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor -o /etc/apt/keyrings/postgresql.gpg
+CODENAME=$(lsb_release -cs 2>/dev/null || echo "noble")
+case "$CODENAME" in
+  oracular|plucky) CODENAME="noble" ;;
+esac
+echo "deb [signed-by=/etc/apt/keyrings/postgresql.gpg] https://apt.postgresql.org/pub/repos/apt ${CODENAME}-pgdg main" | tee /etc/apt/sources.list.d/pgdg.list
+INSTALL_DB_POSTGRES18
+        then
+            log_warn "db.postgres18: install command failed: mkdir -p /etc/apt/keyrings"
+            if type -t record_skipped_tool >/dev/null 2>&1; then
+              record_skipped_tool "db.postgres18" "install command failed: mkdir -p /etc/apt/keyrings"
+            elif type -t state_tool_skip >/dev/null 2>&1; then
+              state_tool_skip "db.postgres18"
+            fi
+            return 0
+        fi
+    fi
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
+        log_info "dry-run: install: apt-get update (root)"
+    else
+        if ! run_as_root_shell <<'INSTALL_DB_POSTGRES18'
+apt-get update
+INSTALL_DB_POSTGRES18
+        then
+            log_warn "db.postgres18: install command failed: apt-get update"
+            if type -t record_skipped_tool >/dev/null 2>&1; then
+              record_skipped_tool "db.postgres18" "install command failed: apt-get update"
+            elif type -t state_tool_skip >/dev/null 2>&1; then
+              state_tool_skip "db.postgres18"
+            fi
+            return 0
+        fi
+    fi
+    if [[ "${DRY_RUN:-false}" == "true" ]]; then
         log_info "dry-run: install: apt-get install -y postgresql-18 (root)"
     else
         if ! run_as_root_shell <<'INSTALL_DB_POSTGRES18'
