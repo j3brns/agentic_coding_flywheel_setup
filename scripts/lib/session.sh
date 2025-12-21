@@ -161,3 +161,159 @@ check_session_deps() {
     fi
     return 0
 }
+
+# ============================================================
+# SANITIZATION
+# ============================================================
+#
+# Sanitization patterns for removing secrets from session exports.
+# See bead 1xq for design decisions.
+#
+# ACFS_SANITIZE_OPTIONAL=1 enables optional patterns (IPs, emails)
+
+# Core redaction patterns - always applied
+# These patterns detect secrets that MUST be redacted
+readonly REDACT_PATTERNS=(
+    # OpenAI API keys (sk-...)
+    'sk-[a-zA-Z0-9]{20,}'
+
+    # Anthropic API keys (sk-ant-...)
+    'sk-ant-[a-zA-Z0-9_-]{20,}'
+
+    # Google API keys (AIza...)
+    'AIza[a-zA-Z0-9_-]{35}'
+
+    # GitHub Personal Access Tokens
+    'ghp_[a-zA-Z0-9]{36}'
+
+    # GitHub OAuth tokens
+    'gho_[a-zA-Z0-9]{36}'
+
+    # GitHub App tokens
+    'ghs_[a-zA-Z0-9]{36}'
+
+    # GitHub Refresh tokens
+    'ghr_[a-zA-Z0-9]{36}'
+
+    # Slack Bot tokens
+    'xoxb-[a-zA-Z0-9-]+'
+
+    # Slack User tokens
+    'xoxp-[a-zA-Z0-9-]+'
+
+    # AWS Access Keys
+    'AKIA[A-Z0-9]{16}'
+
+    # Generic password/secret patterns (key=value or key: value)
+    'password["\s:=]+[^\s"'\'']{8,}'
+    'secret["\s:=]+[^\s"'\'']{8,}'
+    'api_key["\s:=]+[^\s"'\'']{8,}'
+    'apikey["\s:=]+[^\s"'\'']{8,}'
+    'auth_token["\s:=]+[^\s"'\'']{8,}'
+    'access_token["\s:=]+[^\s"'\'']{8,}'
+)
+
+# Optional redaction patterns - applied when ACFS_SANITIZE_OPTIONAL=1
+# These may have higher false positive rates
+readonly OPTIONAL_REDACT_PATTERNS=(
+    # IPv4 addresses
+    '\b[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\b'
+
+    # Email addresses
+    '\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b'
+)
+
+# Sanitize content by applying redaction patterns
+# Usage: sanitize_content "content string"
+# Returns: sanitized content via stdout
+sanitize_content() {
+    local content="$1"
+    local result="$content"
+
+    # Apply core redaction patterns
+    for pattern in "${REDACT_PATTERNS[@]}"; do
+        # Use sed with extended regex for pattern replacement
+        result=$(echo "$result" | sed -E "s/${pattern}/[REDACTED]/gi" 2>/dev/null || echo "$result")
+    done
+
+    # Apply optional patterns if enabled
+    if [[ "${ACFS_SANITIZE_OPTIONAL:-0}" == "1" ]]; then
+        for pattern in "${OPTIONAL_REDACT_PATTERNS[@]}"; do
+            result=$(echo "$result" | sed -E "s/${pattern}/[REDACTED]/gi" 2>/dev/null || echo "$result")
+        done
+    fi
+
+    echo "$result"
+}
+
+# Sanitize a session export JSON file in place
+# Usage: sanitize_session_export "/path/to/export.json"
+# Returns: 0 on success, 1 on failure
+sanitize_session_export() {
+    local file="$1"
+
+    if [[ ! -f "$file" ]]; then
+        log_error "Session export file not found: $file"
+        return 1
+    fi
+
+    # Validate it's valid JSON first
+    if ! jq empty "$file" 2>/dev/null; then
+        log_error "Invalid JSON in session export: $file"
+        return 1
+    fi
+
+    # Create temp file for atomic write
+    local tmpfile
+    tmpfile=$(mktemp)
+
+    # Sanitize all string values in the JSON
+    # This processes the transcript content, summary, key_prompts, etc.
+    if ! jq --arg patterns "${REDACT_PATTERNS[*]}" '
+        # Recursive function to sanitize strings
+        def sanitize_string:
+            if type == "string" then
+                # Apply common secret patterns
+                gsub("sk-[a-zA-Z0-9]{20,}"; "[REDACTED]") |
+                gsub("sk-ant-[a-zA-Z0-9_-]{20,}"; "[REDACTED]") |
+                gsub("AIza[a-zA-Z0-9_-]{35}"; "[REDACTED]") |
+                gsub("ghp_[a-zA-Z0-9]{36}"; "[REDACTED]") |
+                gsub("gho_[a-zA-Z0-9]{36}"; "[REDACTED]") |
+                gsub("ghs_[a-zA-Z0-9]{36}"; "[REDACTED]") |
+                gsub("ghr_[a-zA-Z0-9]{36}"; "[REDACTED]") |
+                gsub("xoxb-[a-zA-Z0-9-]+"; "[REDACTED]") |
+                gsub("xoxp-[a-zA-Z0-9-]+"; "[REDACTED]") |
+                gsub("AKIA[A-Z0-9]{16}"; "[REDACTED]")
+            elif type == "array" then
+                map(sanitize_string)
+            elif type == "object" then
+                with_entries(.value |= sanitize_string)
+            else
+                .
+            end;
+        sanitize_string
+    ' "$file" > "$tmpfile"; then
+        rm -f "$tmpfile"
+        log_error "Failed to sanitize session export"
+        return 1
+    fi
+
+    # Atomic replace
+    mv "$tmpfile" "$file"
+    return 0
+}
+
+# Check if content contains potential secrets (pre-sanitization check)
+# Usage: contains_secrets "content string"
+# Returns: 0 if secrets detected, 1 if clean
+contains_secrets() {
+    local content="$1"
+
+    for pattern in "${REDACT_PATTERNS[@]}"; do
+        if echo "$content" | grep -qE "$pattern" 2>/dev/null; then
+            return 0
+        fi
+    done
+
+    return 1
+}
