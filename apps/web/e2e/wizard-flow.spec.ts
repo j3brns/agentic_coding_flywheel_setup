@@ -363,7 +363,7 @@ test.describe("Command Card Copy Functionality", () => {
     await expect(page.locator("h1").first()).toBeVisible({ timeout: 3000 });
 
     // Find a command card with copy button
-    await expect(page.locator('button:has-text("Copy command")').first()).toBeVisible();
+    await expect(page.getByRole('button', { name: /copy/i }).first()).toBeVisible();
   });
 });
 
