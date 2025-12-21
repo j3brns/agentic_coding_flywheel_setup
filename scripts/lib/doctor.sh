@@ -585,7 +585,76 @@ check_agents() {
         check "agent.alias.gmi" "gmi alias" "warn" "not in zshrc"
     fi
 
+    # Check for PATH conflicts (bead hi7)
+    # Claude Code native install should be in ~/.local/bin, not bun/npm
+    check_agent_path_conflicts
+
+    # Check git safety guard (bead hi7)
+    check_git_safety_guard
+
     blank_line
+}
+
+# Check for agent PATH conflicts (bead hi7)
+# Native installations should take precedence over package manager versions
+check_agent_path_conflicts() {
+    local claude_path
+    claude_path=$(command -v claude 2>/dev/null) || true
+
+    if [[ -z "$claude_path" ]]; then
+        return 0  # Not installed, skip
+    fi
+
+    # Native install should be in ~/.local/bin
+    if [[ "$claude_path" == "$HOME/.local/bin/claude" ]]; then
+        check "agent.path.claude" "Claude Code path" "pass" "native ($claude_path)"
+    elif [[ "$claude_path" == *".bun"* ]] || [[ "$claude_path" == *"node_modules"* ]]; then
+        # Package manager version - warn about potential conflicts
+        check "agent.path.claude" "Claude Code path" "warn" \
+            "using bun/npm version ($claude_path)" \
+            "rm '$claude_path' to use native install"
+    else
+        # Some other path - just note it
+        check "agent.path.claude" "Claude Code path" "pass" "$claude_path"
+    fi
+}
+
+# Check git safety guard hook (bead hi7)
+# Verifies the PreToolUse hook is installed for destructive command protection
+check_git_safety_guard() {
+    local hook_script="$HOME/.claude/hooks/git_safety_guard.py"
+    local settings_file="$HOME/.claude/settings.json"
+
+    # Check if hook script exists
+    if [[ ! -f "$hook_script" ]]; then
+        check "agent.git_safety" "Git safety guard" "warn" \
+            "hook not installed" \
+            "Copy from ~/.acfs/claude/hooks/git_safety_guard.py"
+        return
+    fi
+
+    # Check if executable
+    if [[ ! -x "$hook_script" ]]; then
+        check "agent.git_safety" "Git safety guard" "warn" \
+            "hook not executable" \
+            "chmod +x $hook_script"
+        return
+    fi
+
+    # Check if settings.json references the hook
+    if [[ -f "$settings_file" ]]; then
+        if grep -q "git_safety_guard" "$settings_file" 2>/dev/null; then
+            check "agent.git_safety" "Git safety guard" "pass" "installed"
+        else
+            check "agent.git_safety" "Git safety guard" "warn" \
+                "hook exists but not in settings.json" \
+                "Add PreToolUse hook to ~/.claude/settings.json"
+        fi
+    else
+        check "agent.git_safety" "Git safety guard" "warn" \
+            "hook exists but no settings.json" \
+            "Create ~/.claude/settings.json with hook config"
+    fi
 }
 
 # Check cloud tools
