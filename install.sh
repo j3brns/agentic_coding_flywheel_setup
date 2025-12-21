@@ -593,7 +593,7 @@ ensure_ubuntu() {
 }
 
 ensure_base_deps() {
-    log_step "0/9" "Checking base dependencies..."
+    log_step "1/10" "Checking base dependencies..."
 
     if [[ "$DRY_RUN" == "true" ]]; then
         local sudo_prefix=""
@@ -617,7 +617,7 @@ ensure_base_deps() {
 # Phase 1: User normalization
 # ============================================================
 normalize_user() {
-    log_step "1/9" "Normalizing user account..."
+    log_step "2/10" "Normalizing user account..."
 
     # Create target user if it doesn't exist
     if ! id "$TARGET_USER" &>/dev/null; then
@@ -658,7 +658,7 @@ normalize_user() {
 # Phase 2: Filesystem setup
 # ============================================================
 setup_filesystem() {
-    log_step "2/9" "Setting up filesystem..."
+    log_step "3/10" "Setting up filesystem..."
 
     # System directories
     local sys_dirs=("/data/projects" "/data/cache")
@@ -693,7 +693,7 @@ setup_filesystem() {
 # Phase 3: Shell setup (zsh + oh-my-zsh + p10k)
 # ============================================================
 setup_shell() {
-    log_step "3/9" "Setting up shell..."
+    log_step "4/10" "Setting up shell..."
 
     # Install zsh
     if ! command_exists zsh; then
@@ -809,7 +809,7 @@ install_github_cli() {
 }
 
 install_cli_tools() {
-    log_step "4/9" "Installing CLI tools..."
+    log_step "5/10" "Installing CLI tools..."
 
     # Install gum if not already installed (install_gum_early may have skipped
     # if curl/gpg weren't available at that point)
@@ -865,7 +865,7 @@ install_cli_tools() {
 # Phase 5: Language runtimes
 # ============================================================
 install_languages() {
-    log_step "5/9" "Installing language runtimes..."
+    log_step "6/10" "Installing language runtimes..."
 
     # Bun (install as target user)
     local bun_bin="$TARGET_HOME/.bun/bin/bun"
@@ -926,7 +926,7 @@ install_languages() {
 # Phase 6: Coding agents
 # ============================================================
 install_agents() {
-    log_step "6/9" "Installing coding agents..."
+    log_step "7/10" "Installing coding agents..."
 
     # Use target user's bun
     local bun_bin="$TARGET_HOME/.bun/bin/bun"
@@ -955,7 +955,7 @@ install_agents() {
 # Phase 7: Cloud & database tools
 # ============================================================
 install_cloud_db() {
-    log_step "7/9" "Installing cloud & database tools..."
+    log_step "8/10" "Installing cloud & database tools..."
 
     local codename="noble"
     if [[ -f /etc/os-release ]]; then
@@ -1070,7 +1070,7 @@ install_cloud_db() {
 # Phase 8: Dicklesworthstone stack
 # ============================================================
 install_stack() {
-    log_step "8/9" "Installing Dicklesworthstone stack..."
+    log_step "9/10" "Installing Dicklesworthstone stack..."
 
     # NTM (Named Tmux Manager)
     log_detail "Installing NTM"
@@ -1111,7 +1111,7 @@ install_stack() {
 # Phase 9: Final wiring
 # ============================================================
 finalize() {
-    log_step "9/9" "Finalizing installation..."
+    log_step "10/10" "Finalizing installation..."
 
     # Copy tmux config
     log_detail "Installing tmux config"

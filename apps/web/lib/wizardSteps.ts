@@ -98,7 +98,7 @@ export function getStepBySlug(slug: string): WizardStep | undefined {
 }
 
 /** localStorage key for storing completed steps */
-export const COMPLETED_STEPS_KEY = "flywheel-wizard-completed-steps";
+export const COMPLETED_STEPS_KEY = "agent-flywheel-wizard-completed-steps";
 
 // Query keys for TanStack Query
 export const wizardStepsKeys = {

@@ -13,7 +13,7 @@ defaults:
 
 modules:
   # ============================================================
-  # PHASE 1: Base system packages
+  # PHASE 1: Base dependencies (apt packages)
   # ============================================================
   - id: base.system
     description: Base packages + sane defaults
@@ -39,7 +39,19 @@ modules:
       - sudo -n true
 
   # ============================================================
-  # PHASE 3: Shell luxury mode
+  # PHASE 3: Filesystem setup
+  # ============================================================
+  - id: base.filesystem
+    description: Create workspace and ACFS directories
+    install:
+      - "Create /data/projects and /data/cache directories"
+      - "Create ~/.acfs/{zsh,tmux,bin,docs,logs} directories"
+    verify:
+      - test -d /data/projects
+      - test -d ~/.acfs
+
+  # ============================================================
+  # PHASE 4: Shell setup (zsh + oh-my-zsh + p10k)
   # ============================================================
   - id: shell.zsh
     description: Zsh + Oh My Zsh + Powerlevel10k + plugins + canonical ACFS zshrc
@@ -53,6 +65,9 @@ modules:
       - zsh --version
       - test -f ~/.acfs/zsh/acfs.zshrc
 
+  # ============================================================
+  # PHASE 5: CLI tools
+  # ============================================================
   - id: cli.modern
     description: Modern CLI tools referenced by the zshrc intent
     install:
@@ -81,7 +96,7 @@ modules:
       - command -v lsd || command -v eza || true
 
   # ============================================================
-  # PHASE 4: Languages + package tooling
+  # PHASE 6: Language runtimes
   # ============================================================
   - id: lang.bun
     description: Bun runtime for JS tooling and global CLIs
@@ -116,9 +131,7 @@ modules:
     verify:
       - go version
 
-  # ============================================================
-  # PHASE 5: Agentic engineering tools
-  # ============================================================
+  # Additional CLI tools (atuin, zoxide, ast-grep installed with languages)
   - id: tools.atuin
     description: Atuin shell history (Ctrl-R superpowers)
     install:
@@ -142,48 +155,8 @@ modules:
     verify:
       - sg --version
 
-  - id: tools.vault
-    description: HashiCorp Vault CLI
-    install:
-      - "Install Vault via official HashiCorp instructions (apt repo or binary)"
-    verify:
-      - vault --version
-
-  - id: db.postgres18
-    description: PostgreSQL 18
-    install:
-      - "Add PGDG apt repo"
-      - sudo apt-get install -y postgresql-18
-    verify:
-      - psql --version
-      - systemctl status postgresql --no-pager || true
-
   # ============================================================
-  # Cloud CLIs
-  # ============================================================
-  - id: cloud.wrangler
-    description: Cloudflare Wrangler CLI
-    install:
-      - ~/.bun/bin/bun install -g wrangler
-    verify:
-      - wrangler --version
-
-  - id: cloud.supabase
-    description: Supabase CLI
-    install:
-      - ~/.bun/bin/bun install -g supabase
-    verify:
-      - supabase --version
-
-  - id: cloud.vercel
-    description: Vercel CLI
-    install:
-      - ~/.bun/bin/bun install -g vercel
-    verify:
-      - vercel --version
-
-  # ============================================================
-  # Coding agents
+  # PHASE 7: Coding agents
   # ============================================================
   - id: agents.claude
     description: Claude Code
@@ -207,7 +180,47 @@ modules:
       - gemini --version || gemini --help
 
   # ============================================================
-  # PHASE 6: Dicklesworthstone stack (all 8 tools)
+  # PHASE 8: Cloud & database tools
+  # ============================================================
+  - id: tools.vault
+    description: HashiCorp Vault CLI
+    install:
+      - "Install Vault via official HashiCorp instructions (apt repo or binary)"
+    verify:
+      - vault --version
+
+  - id: db.postgres18
+    description: PostgreSQL 18
+    install:
+      - "Add PGDG apt repo"
+      - sudo apt-get install -y postgresql-18
+    verify:
+      - psql --version
+      - systemctl status postgresql --no-pager || true
+
+  - id: cloud.wrangler
+    description: Cloudflare Wrangler CLI
+    install:
+      - ~/.bun/bin/bun install -g wrangler
+    verify:
+      - wrangler --version
+
+  - id: cloud.supabase
+    description: Supabase CLI
+    install:
+      - ~/.bun/bin/bun install -g supabase
+    verify:
+      - supabase --version
+
+  - id: cloud.vercel
+    description: Vercel CLI
+    install:
+      - ~/.bun/bin/bun install -g vercel
+    verify:
+      - vercel --version
+
+  # ============================================================
+  # PHASE 9: Dicklesworthstone stack (all 8 tools)
   # ============================================================
   - id: stack.ntm
     description: Named tmux manager (agent cockpit)
@@ -277,7 +290,7 @@ modules:
       - slb --help
 
   # ============================================================
-  # PHASE 7: Final wiring
+  # PHASE 10: Finalization (onboard, doctor, verification)
   # ============================================================
   - id: acfs.onboard
     description: Onboarding TUI tutorial
