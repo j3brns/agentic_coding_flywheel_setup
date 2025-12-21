@@ -156,6 +156,56 @@ export default function StatusCheckPage() {
         </div>
       </div>
 
+      {/* Authenticate your services */}
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <KeyRound className="h-5 w-5" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold">Authenticate your services</h2>
+            <p className="text-sm text-muted-foreground">
+              Log in to each tool to connect your accounts
+            </p>
+          </div>
+        </div>
+
+        {/* Auth commands grouped by category */}
+        {(["access", "agent", "cloud"] as const).map((category) => {
+          const services = getAuthServices()[category];
+          if (services.length === 0) return null;
+
+          return (
+            <div key={category} className="space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="flex h-6 w-6 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                  {AUTH_CATEGORY_ICONS[category]}
+                </div>
+                <h3 className="text-sm font-medium text-muted-foreground">
+                  {CATEGORY_NAMES[category]}
+                </h3>
+              </div>
+              <div className="space-y-2 pl-8">
+                {services.map((service) => (
+                  <CommandCard
+                    key={service.id}
+                    command={service.postInstallCommand!}
+                    description={`Log in to ${service.name}`}
+                    showCheckbox
+                    persistKey={`auth-${service.id}`}
+                  />
+                ))}
+              </div>
+            </div>
+          );
+        })}
+
+        <p className="text-xs text-muted-foreground">
+          Each command opens a browser window for authentication. Complete the login,
+          then return to your terminal.
+        </p>
+      </div>
+
       {/* Troubleshooting */}
       <AlertCard variant="warning" icon={AlertCircle} title="Something not working?">
         Try running{" "}
@@ -278,6 +328,30 @@ export default function StatusCheckPage() {
                   The installer set up tools for the ubuntu user specifically.
                 </p>
               </div>
+            </div>
+          </GuideSection>
+
+          <GuideSection title="Authenticating Your Services">
+            <p className="mb-3">
+              The services you signed up for need to be connected to your VPS.
+              Each command opens a browser window where you log in:
+            </p>
+            <div className="space-y-4">
+              <GuideStep number={1} title="Run the login command">
+                Copy and run a command like{" "}
+                <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">claude</code> or{" "}
+                <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">vercel login</code>.
+              </GuideStep>
+
+              <GuideStep number={2} title="Complete browser login">
+                A URL will appear in your terminal. Open it in your browser and
+                sign in with the account you created earlier.
+              </GuideStep>
+
+              <GuideStep number={3} title="Return to terminal">
+                Once you&apos;ve logged in, the terminal will confirm the connection.
+                Check the box next to each command as you complete it.
+              </GuideStep>
             </div>
           </GuideSection>
 
