@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { type ReactNode } from "react";
 import {
   ArrowLeft,
   Bot,
@@ -33,7 +34,7 @@ type ToolDoc = {
   title: string;
   tagline: string;
   description: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   accent: string;
   quickStart?: { title: string; code: string };
   commonCommands: Array<{ command: string; description: string }>;
@@ -352,4 +353,3 @@ export default async function ToolDocPage({ params }: Props) {
     </div>
   );
 }
-
