@@ -102,10 +102,12 @@ installed_check:
 - `recommended` - Should install unless explicitly skipped
 - `optional` - Nice to have, not required
 - `orchestration` - Handled by orchestrator, not generated
+- `runtime` - Language runtime (bun, uv, rust, go)
+- `agent` - AI coding agent (Claude, Codex, Gemini)
 - `shell-ux` - Affects shell experience
 - `cli-modern` - Modern CLI tool replacements
 - `cloud` - Cloud provider integrations
-- `db` - Database tools
+- `database` - Database tools
 
 ### Metadata Fields
 
@@ -149,7 +151,7 @@ installed_check:
   run_as: target_user
   optional: false
   enabled_by_default: true
-  tags: [recommended, lang-runtime]
+  tags: [critical, runtime]
   dependencies:
     - base.system
   verified_installer:

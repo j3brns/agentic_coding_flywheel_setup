@@ -64,7 +64,9 @@ Sessions are stored as JSONL files. Each line is a JSON object with:
 }
 ```
 
-### Event Types
+### Event Types (Codex CLI format)
+
+**Note:** Event type schemas vary by agent. The examples below are from Codex CLI sessions.
 
 1. **`response_item`** - Initial session metadata
    ```json
