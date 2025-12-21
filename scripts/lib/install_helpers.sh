@@ -32,6 +32,107 @@ fi
 : "${PRINT_PLAN:=false}"
 
 # ------------------------------------------------------------
+# Feature flags: generated vs legacy installers (mjt.5.6)
+# ------------------------------------------------------------
+# These flags let maintainers roll out the manifest-driven, generated installers
+# category-by-category while keeping a fast rollback path.
+#
+# Precedence:
+#   1) ACFS_USE_GENERATED_<CATEGORY> (if set)
+#   2) ACFS_USE_GENERATED            (if set)
+#   3) Default for migrated categories (see ACFS_GENERATED_MIGRATED_CATEGORIES)
+#
+# Valid values: 0/1, true/false, yes/no, on/off (case-insensitive)
+#
+# Categories are the manifest "category" values (e.g., base, shell, cli, lang, tools, agents, db, cloud, stack, acfs).
+#
+# Note: The orchestrator (install.sh) remains responsible for state/resume framing.
+
+ACFS_GENERATED_MIGRATED_CATEGORIES_DEFAULT=() # Empty until categories are explicitly migrated.
+
+_acfs_upper() {
+    local s="${1:-}"
+    # Bash 4+: ${var^^}
+    echo "${s^^}"
+}
+
+_acfs_normalize_bool() {
+    local raw="${1:-}"
+    case "${raw,,}" in
+        1|true|yes|on) echo "1" ;;
+        0|false|no|off) echo "0" ;;
+        *) return 1 ;;
+    esac
+}
+
+acfs_flag_bool() {
+    local var_name="$1"
+    local raw="${!var_name:-}"
+
+    if [[ -z "${raw:-}" ]]; then
+        echo ""
+        return 0
+    fi
+
+    local normalized=""
+    if normalized="$(_acfs_normalize_bool "$raw")"; then
+        echo "$normalized"
+        return 0
+    fi
+
+    if declare -f log_warn >/dev/null 2>&1; then
+        log_warn "Ignoring invalid ${var_name}=${raw} (expected 0/1 or true/false)"
+    else
+        echo "WARN: Ignoring invalid ${var_name}=${raw} (expected 0/1 or true/false)" >&2
+    fi
+
+    echo ""
+    return 0
+}
+
+acfs_should_use_generated_category() {
+    local category="${1:-}"
+    [[ -n "$category" ]] || { echo "0"; return 0; }
+
+    local category_upper
+    category_upper="$(_acfs_upper "$category")"
+
+    local category_var="ACFS_USE_GENERATED_${category_upper}"
+    local category_value
+    category_value="$(acfs_flag_bool "$category_var")"
+    if [[ -n "$category_value" ]]; then
+        echo "$category_value"
+        return 0
+    fi
+
+    local global_value
+    global_value="$(acfs_flag_bool "ACFS_USE_GENERATED")"
+    if [[ -n "$global_value" ]]; then
+        echo "$global_value"
+        return 0
+    fi
+
+    local migrated_categories=()
+    if [[ -n "${ACFS_GENERATED_MIGRATED_CATEGORIES:-}" ]]; then
+        IFS=',' read -ra migrated_categories <<< "${ACFS_GENERATED_MIGRATED_CATEGORIES}"
+    else
+        migrated_categories=("${ACFS_GENERATED_MIGRATED_CATEGORIES_DEFAULT[@]}")
+    fi
+
+    local c=""
+    for c in "${migrated_categories[@]}"; do
+        [[ -n "$c" ]] || continue
+        if [[ "${c,,}" == "${category,,}" ]]; then
+            echo "1"
+            return 0
+        fi
+    done
+
+    echo "0"
+    return 0
+}
+
+# ------------------------------------------------------------
 # Effective selection (computed once after manifest_index)
 # Uses -g for global scope when sourced inside a function
 # ------------------------------------------------------------
