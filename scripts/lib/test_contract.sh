@@ -45,7 +45,8 @@ define_required_functions() {
     run_as_target_shell() { :; }
     run_as_root_shell() { :; }
     run_as_current_shell() { :; }
-    export -f log_detail run_as_target run_as_target_shell run_as_root_shell run_as_current_shell
+    _acfs_is_interactive() { return 1; }
+    export -f log_detail run_as_target run_as_target_shell run_as_root_shell run_as_current_shell _acfs_is_interactive
 }
 
 # Undefine functions
