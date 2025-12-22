@@ -378,7 +378,7 @@ describe('Generated script headers', () => {
     const scriptPath = resolve(GENERATED_DIR, 'install_lang.sh');
     if (existsSync(scriptPath)) {
       const content = readFileSync(scriptPath, 'utf-8');
-      expect(content).toContain('source "$SCRIPT_DIR/../lib/logging.sh"');
+      expect(content).toContain('source "$ACFS_GENERATED_SCRIPT_DIR/../lib/logging.sh"');
     }
   });
 
@@ -386,7 +386,7 @@ describe('Generated script headers', () => {
     const scriptPath = resolve(GENERATED_DIR, 'install_agents.sh');
     if (existsSync(scriptPath)) {
       const content = readFileSync(scriptPath, 'utf-8');
-      expect(content).toContain('source "$SCRIPT_DIR/../lib/install_helpers.sh"');
+      expect(content).toContain('source "$ACFS_GENERATED_SCRIPT_DIR/../lib/install_helpers.sh"');
     }
   });
 });

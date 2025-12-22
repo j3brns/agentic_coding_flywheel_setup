@@ -12,6 +12,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # shellcheck source=../../scripts/lib/state.sh
+# shellcheck disable=SC1091
 source "$REPO_ROOT/scripts/lib/state.sh"
 
 failures=0

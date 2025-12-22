@@ -212,14 +212,17 @@ test_skip_vault_with_explicit_only_fails() {
 
     # Either the plan is empty or the script failed
     local module_count
-    module_count=$(echo "$output" | grep -cE '^\s*(base\.|lang\.|tools\.|agents\.|cloud\.|db\.|stack\.|shell\.|users\.|cli\.|acfs\.)' || true)
+    module_count=$(echo "$output" | grep -cE '^[[:space:]]*[0-9]+\\.[[:space:]]+\\[Phase' || true)
 
-    # The only module in the plan should be base.system (dep of tools.vault)
-    # tools.vault itself should NOT be in the plan
-    if ! echo "$output" | grep -qE '^\s*tools\.vault'; then
+    if [[ $rc -ne 0 ]]; then
+        pass "$name"
+        return 0
+    fi
+
+    if [[ "$module_count" -eq 0 ]]; then
         pass "$name"
     else
-        fail "$name" "tools.vault should be excluded by --skip-vault"
+        fail "$name" "Expected empty plan when module is both --only and --skip (found $module_count plan items)"
     fi
 }
 

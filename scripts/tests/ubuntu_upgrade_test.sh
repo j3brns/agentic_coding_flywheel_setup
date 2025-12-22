@@ -123,7 +123,7 @@ _create_mock_os_release() {
     local version_id="$1"
     local codename="${2:-}"
 
-    export _TEST_OS_RELEASE=$(cat <<EOF
+    _TEST_OS_RELEASE=$(cat <<EOF
 NAME="Ubuntu"
 VERSION="$version_id LTS (Noble Numbat)"
 ID=ubuntu
@@ -133,6 +133,7 @@ VERSION_ID="$version_id"
 VERSION_CODENAME="${codename:-noble}"
 EOF
 )
+    export _TEST_OS_RELEASE
 }
 
 # Override ubuntu_get_version_string for testing
