@@ -351,6 +351,36 @@ export default function RunInstallerPage() {
             is running. If you accidentally close it, SSH back in and run the
             command again. It will resume from where it stopped.
           </GuideCaution>
+
+          <GuideSection title="If Installation Seems Stuck">
+            <p className="mb-3">
+              Installation can look &quot;stuck&quot; at certain points. Here&apos;s what&apos;s actually happening:
+            </p>
+            <ul className="space-y-3">
+              <li>
+                <strong>Stuck on &quot;Installing Rust...&quot;</strong> — Rust is a large download (~300MB).
+                This step can take 2-5 minutes depending on your VPS speed. Just wait.
+              </li>
+              <li>
+                <strong>Stuck on &quot;Setting up oh-my-zsh...&quot;</strong> — This step downloads
+                plugins from GitHub. If GitHub is slow, it can take a minute. Wait it out.
+              </li>
+              <li>
+                <strong>No output for 2+ minutes</strong> — Some steps don&apos;t show progress.
+                If the terminal cursor is still blinking, it&apos;s still running. Wait.
+              </li>
+              <li>
+                <strong>Actual error message appears</strong> — If you see red error text or
+                &quot;Failed&quot;, SSH back in and run the install command again. The installer
+                will skip completed steps and retry the failed one.
+              </li>
+            </ul>
+            <GuideTip className="mt-4">
+              The entire installation rarely takes more than 20 minutes. If it&apos;s been
+              30+ minutes with no progress at all, SSH back in and check if the script
+              is still running. If not, just run the install command again.
+            </GuideTip>
+          </GuideSection>
         </div>
       </SimplerGuide>
 
