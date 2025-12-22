@@ -164,7 +164,9 @@ export function useCompletedSteps(): [number[], (stepId: number) => void] {
   const { data: steps } = useQuery({
     queryKey: wizardStepsKeys.completedSteps,
     queryFn: getCompletedSteps,
-    staleTime: Infinity,
+    // Use staleTime: 0 so the stepper re-fetches from localStorage on mount.
+    // This ensures changes made by markStepComplete() are reflected.
+    staleTime: 0,
     gcTime: Infinity,
   });
 

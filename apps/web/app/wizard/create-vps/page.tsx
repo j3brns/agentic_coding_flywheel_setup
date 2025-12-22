@@ -455,6 +455,14 @@ export default function CreateVPSPage() {
                     </p>
                   )}
 
+                  {/* Hint when IP is valid but checklist isn't complete */}
+                  {isValid && !allChecked && (
+                    <p className="flex items-center gap-1 text-sm text-muted-foreground">
+                      <AlertCircle className="h-4 w-4" />
+                      Complete the checklist above to continue
+                    </p>
+                  )}
+
                   {/* Continue button - rendered inside field for access to validation state */}
                   <div className="flex justify-end pt-6">
                     <Button
