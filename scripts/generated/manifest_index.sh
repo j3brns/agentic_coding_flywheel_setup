@@ -6,7 +6,7 @@
 # ============================================================
 # Data-only manifest index. Safe to source.
 
-ACFS_MANIFEST_SHA256="9393cf2f1ba480f1acfe22dbefb678b88c08b027f6d502483691f5df212dec78"
+ACFS_MANIFEST_SHA256="97062a3ae53977d5b56944e81853a9ec6714ff3f0ff9a1d6fdb91feb029bb52c"
 
 ACFS_MODULES_IN_ORDER=(
   "base.system"
@@ -113,7 +113,7 @@ declare -gA ACFS_MODULE_DEPS=(
   [stack.cass]="lang.rust,lang.uv"
   [stack.cm]="lang.rust,lang.uv"
   [stack.caam]="lang.bun"
-  [stack.slb]="lang.rust"
+  [stack.slb]="lang.go"
   [acfs.workspace]="agents.claude,agents.codex,agents.gemini,cli.modern"
   [acfs.onboard]=""
   [acfs.doctor]=""

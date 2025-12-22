@@ -46,10 +46,6 @@ installers:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/ultimate_bug_scanner/master/install.sh"
     sha256: "0a2591c9a52ad003a4dcee8f3098af67b122b019a68eb3f03f37cd8021675198"
 
-  slb:
-    url: "https://raw.githubusercontent.com/Dicklesworthstone/simultaneous_launch_button/main/scripts/install.sh"
-    sha256: "bc278b4b234e3f85c9dc4def16336f420d5823fabba48aec26c4f72685dba191"
-
   nvm:
     url: "https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh"
     sha256: "abdb525ee9f5b48b34d8ed9fc67c6013fb0f659712e401ecd88ab989b3af8f53"

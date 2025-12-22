@@ -1414,35 +1414,9 @@ acfs_load_upstream_checksums() {
     return 0
 }
 
-# Trusted domains for auto-accepting checksum changes
-# URLs from these domains are considered trusted; stale checksums won't block installation
-ACFS_TRUSTED_DOMAINS=(
-    "bun.sh"
-    "astral.sh"
-    "rustup.rs"
-    "sh.rustup.rs"
-    "claude.ai"
-    "setup.atuin.sh"
-    "raw.githubusercontent.com"
-)
-
-# Check if a URL is from a trusted domain
-acfs_is_trusted_source() {
-    local url="$1"
-    local domain
-
-    # Extract domain from URL (handles https://domain.com/path)
-    domain="${url#https://}"
-    domain="${domain#http://}"
-    domain="${domain%%/*}"
-
-    for trusted in "${ACFS_TRUSTED_DOMAINS[@]}"; do
-        if [[ "$domain" == "$trusted" ]] || [[ "$domain" == *".$trusted" ]]; then
-            return 0
-        fi
-    done
-    return 1
-}
+#
+# Upstream installers are pinned by checksums.yaml.
+# On checksum mismatch we fail closed (never execute unverified scripts).
 
 acfs_run_verified_upstream_script_as_target() {
     local tool="$1"
@@ -1465,22 +1439,18 @@ acfs_run_verified_upstream_script_as_target() {
     actual_sha256="$(printf '%s' "$content" | acfs_calculate_sha256)" || return 1
 
     if [[ "$actual_sha256" != "$expected_sha256" ]]; then
-        # TRUSTED SOURCES: Auto-accept checksum changes with warning
-        # This enables bulletproof automation - trusted sources are almost never compromised,
-        # and stale checksums are the #1 cause of install failures
-        if acfs_is_trusted_source "$url"; then
-            log_warn "Checksum changed for '$tool' (trusted source: auto-accepting)"
-            log_detail "Expected: ${expected_sha256:0:16}..."
-            log_detail "Actual:   ${actual_sha256:0:16}..."
-            log_info "Proceeding with updated version from trusted source"
-            # Fall through to run the script
-        else
-            log_error "Security error: checksum mismatch for '$tool'"
-            log_detail "URL: $url"
-            log_detail "Expected: $expected_sha256"
-            log_detail "Actual:   $actual_sha256"
-            return 1
+        log_error "Security error: checksum mismatch for '$tool'"
+        log_detail "URL: $url"
+        log_detail "Expected: $expected_sha256"
+        log_detail "Actual:   $actual_sha256"
+        log_error "Refusing to execute unverified installer script."
+        log_error "Fix: update checksums.yaml in the ACFS repo and re-run."
+
+        if [[ "${ACFS_STRICT_MODE:-false}" == "true" ]]; then
+            log_fatal "Strict mode: aborting due to checksum mismatch for '$tool'"
         fi
+
+        return 1
     fi
 
     printf '%s' "$content" | run_as_target "$runner" -s -- "$@"
@@ -2556,13 +2526,21 @@ install_cloud_db_legacy_tools() {
     elif command_exists vault; then
         log_detail "Vault already installed ($(vault --version 2>/dev/null | head -1 || echo 'vault'))"
     else
-        log_detail "Installing Vault (HashiCorp repo, codename=$codename)"
+        # HashiCorp doesn't always have packages for newest Ubuntu versions.
+        # Check if the current codename is supported, otherwise fall back to noble (24.04 LTS).
+        local vault_codename="$codename"
+        if ! curl -sfI "https://apt.releases.hashicorp.com/dists/${codename}/main/binary-amd64/Packages" >/dev/null 2>&1; then
+            vault_codename="noble"
+            log_detail "HashiCorp repo unavailable for $codename, using $vault_codename"
+        fi
+
+        log_detail "Installing Vault (HashiCorp repo, codename=$vault_codename)"
         try_step "Creating apt keyrings for Vault" $SUDO mkdir -p /etc/apt/keyrings || true
 
         if ! try_step_eval "Adding HashiCorp apt key" "set -o pipefail; curl -fsSL https://apt.releases.hashicorp.com/gpg | $SUDO gpg --batch --yes --dearmor -o /etc/apt/keyrings/hashicorp.gpg 2>/dev/null"; then
             log_warn "Vault: failed to install signing key (skipping)"
         else
-            try_step_eval "Adding HashiCorp apt repo" "echo 'deb [signed-by=/etc/apt/keyrings/hashicorp.gpg] https://apt.releases.hashicorp.com ${codename} main' | $SUDO tee /etc/apt/sources.list.d/hashicorp.list > /dev/null" || true
+            try_step_eval "Adding HashiCorp apt repo" "echo 'deb [signed-by=/etc/apt/keyrings/hashicorp.gpg] https://apt.releases.hashicorp.com ${vault_codename} main' | $SUDO tee /etc/apt/sources.list.d/hashicorp.list > /dev/null" || true
 
             try_step "Updating apt cache for Vault" $SUDO apt-get update -y || log_warn "Vault: apt-get update failed (continuing)"
             if try_step "Installing Vault" $SUDO apt-get install -y vault; then

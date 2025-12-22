@@ -502,41 +502,15 @@ install_stack_slb() {
     log_step "Installing stack.slb"
 
     if [[ "${DRY_RUN:-false}" == "true" ]]; then
-        log_info "dry-run: verified installer: stack.slb"
+        log_info "dry-run: install: go install github.com/Dicklesworthstone/slb@latest (target_user)"
     else
-        if ! {
-            # Try security-verified install first, fall back to direct install
-            local install_success=false
-
-            if acfs_security_init 2>/dev/null; then
-                # Check if KNOWN_INSTALLERS is available as an associative array (declare -A)
-                # The grep ensures we specifically have an associative array, not just any variable
-                if declare -p KNOWN_INSTALLERS 2>/dev/null | grep -q 'declare -A'; then
-                    local tool="slb"
-                    local url=""
-                    local expected_sha256=""
-
-                    # Safe access with explicit empty default
-                    url="${KNOWN_INSTALLERS[$tool]:-}"
-                    expected_sha256="$(get_checksum "$tool" 2>/dev/null)" || expected_sha256=""
-
-                    if [[ -n "$url" ]] && [[ -n "$expected_sha256" ]]; then
-                        if verify_checksum "$url" "$expected_sha256" "$tool" 2>/dev/null | run_as_target_runner 'bash' '-s'; then
-                            install_success=true
-                        fi
-                    fi
-                fi
-            fi
-
-            # No fallback URL - verified install is required
-            if [[ "$install_success" != "true" ]]; then
-                log_error "Verified install failed for stack.slb and no fallback available"
-                false
-            fi
-        }; then
-            log_warn "stack.slb: verified installer failed"
+        if ! run_as_target_shell <<'INSTALL_STACK_SLB'
+go install github.com/Dicklesworthstone/slb@latest
+INSTALL_STACK_SLB
+        then
+            log_warn "stack.slb: install command failed: go install github.com/Dicklesworthstone/slb@latest"
             if type -t record_skipped_tool >/dev/null 2>&1; then
-              record_skipped_tool "stack.slb" "verified installer failed"
+              record_skipped_tool "stack.slb" "install command failed: go install github.com/Dicklesworthstone/slb@latest"
             elif type -t state_tool_skip >/dev/null 2>&1; then
               state_tool_skip "stack.slb"
             fi

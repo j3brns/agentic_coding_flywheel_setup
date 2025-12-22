@@ -801,14 +801,12 @@ modules:
     enabled_by_default: true
     tags: [optional]
     dependencies:
-      - lang.rust
+      - lang.go
     installed_check:
       run_as: target_user
       command: "command -v slb"
-    verified_installer:
-      tool: slb
-      runner: bash
-    install: []
+    install:
+      - go install github.com/Dicklesworthstone/slb@latest
     verify:
       - slb --help
 
