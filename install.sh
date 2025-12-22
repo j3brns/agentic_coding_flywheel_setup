@@ -2080,19 +2080,24 @@ EOF
     # Ensure ~/.local/bin is in PATH for bash login shells (used by installers)
     # This prevents warnings from tools like Claude's installer that check PATH
     local user_profile="$TARGET_HOME/.profile"
+    # shellcheck disable=SC2016  # We want $HOME/$PATH to expand when .profile is sourced, not during install.
     local profile_path_line='export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$HOME/.bun/bin:$PATH"'
     if [[ ! -f "$user_profile" ]]; then
         # Create new .profile
-        echo "# ~/.profile: executed by bash for login shells" > "$user_profile"
-        echo "" >> "$user_profile"
-        echo "# User binary paths" >> "$user_profile"
-        echo "$profile_path_line" >> "$user_profile"
+        {
+            echo "# ~/.profile: executed by bash for login shells"
+            echo ""
+            echo "# User binary paths"
+            echo "$profile_path_line"
+        } > "$user_profile"
         $SUDO chown "$TARGET_USER:$TARGET_USER" "$user_profile"
     elif ! grep -q '\.local/bin' "$user_profile" 2>/dev/null; then
         # Append to existing .profile
-        echo "" >> "$user_profile"
-        echo "# Added by ACFS - user binary paths" >> "$user_profile"
-        echo "$profile_path_line" >> "$user_profile"
+        {
+            echo ""
+            echo "# Added by ACFS - user binary paths"
+            echo "$profile_path_line"
+        } >> "$user_profile"
     fi
     # Ensure correct ownership (handles edge case where file was created by root)
     [[ -f "$user_profile" ]] && $SUDO chown "$TARGET_USER:$TARGET_USER" "$user_profile" 2>/dev/null || true

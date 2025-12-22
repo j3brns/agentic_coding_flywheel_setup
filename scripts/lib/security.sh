@@ -129,44 +129,11 @@ declare -gA KNOWN_INSTALLERS=(
 )
 
 # ============================================================
-# Trusted Sources - Auto-Accept Checksum Changes
+# Checksum Verification Policy
 # ============================================================
 #
-# URLs from these domains are considered trusted. When checksums
-# mismatch for trusted sources, we log a warning but PROCEED anyway.
-# This prevents stale checksums from blocking legitimate installations.
-#
-# Rationale: A checksum mismatch from bun.sh is 99.99% likely to be
-# a legitimate upstream update, not a supply chain attack.
-#
-TRUSTED_DOMAINS=(
-    "bun.sh"
-    "astral.sh"
-    "rustup.rs"
-    "sh.rustup.rs"
-    "claude.ai"
-    "setup.atuin.sh"
-    "raw.githubusercontent.com"
-)
-
-# Check if a URL is from a trusted domain
-is_trusted_source() {
-    local url="$1"
-    local domain
-
-    # Extract domain from URL (handles https://domain.com/path)
-    domain="${url#https://}"
-    domain="${domain#http://}"
-    domain="${domain%%/*}"
-
-    for trusted in "${TRUSTED_DOMAINS[@]}"; do
-        # Match exact domain or subdomain
-        if [[ "$domain" == "$trusted" ]] || [[ "$domain" == *".$trusted" ]]; then
-            return 0
-        fi
-    done
-    return 1
-}
+# ACFS fails closed on checksum mismatch: scripts are NOT executed unless the
+# downloaded bytes match checksums.yaml exactly.
 
 # Colors
 RED='\033[0;31m'
@@ -282,33 +249,16 @@ verify_checksum() {
     }
 
     if [[ "$actual_sha256" != "$expected_sha256" ]]; then
-        # TRUSTED SOURCES: Auto-accept checksum changes with warning
-        # This enables bulletproof automation - trusted sources are almost never compromised,
-        # and stale checksums are the #1 cause of install failures
-        if is_trusted_source "$url"; then
-            if [[ "${ACFS_STRICT_MODE:-false}" == "true" ]]; then
-                echo -e "${RED}Security Error:${NC} Checksum mismatch for $name (strict mode)" >&2
-                echo -e "  Expected: $expected_sha256" >&2
-                echo -e "  Actual:   $actual_sha256" >&2
-                echo -e "  URL: $url" >&2
-                return 1
-            fi
-
-            echo -e "${YELLOW}NOTICE:${NC} Checksum changed for $name (trusted source: auto-accepting)" >&2
-            echo -e "  Expected: ${expected_sha256:0:16}..." >&2
-            echo -e "  Actual:   ${actual_sha256:0:16}..." >&2
-            echo -e "  ${GREEN}Proceeding with updated version from trusted source${NC}" >&2
-            # Fall through to output content
-        else
-            echo -e "${RED}Security Error:${NC} Checksum mismatch for $name" >&2
-            echo -e "  Expected: $expected_sha256" >&2
-            echo -e "  Actual:   $actual_sha256" >&2
-            echo -e "  URL: $url" >&2
-            return 1
-        fi
-    else
-        echo -e "${GREEN}Verified:${NC} $name" >&2
+        echo -e "${RED}Security Error:${NC} Checksum mismatch for $name" >&2
+        echo -e "  Expected: $expected_sha256" >&2
+        echo -e "  Actual:   $actual_sha256" >&2
+        echo -e "  URL: $url" >&2
+        echo -e "  Refusing to execute unverified installer script." >&2
+        echo -e "  Fix: update checksums.yaml (./scripts/lib/security.sh --update-checksums > checksums.yaml)" >&2
+        return 1
     fi
+
+    echo -e "${GREEN}Verified:${NC} $name" >&2
     # Return the verified content (verbatim bytes) on stdout.
     printf '%s' "$content"
 }
@@ -349,7 +299,8 @@ fetch_and_run() {
 # gracefully by calling handle_checksum_mismatch() which can:
 #   - Skip the tool (return 0)
 #   - Abort installation (return 1)
-#   - Proceed with the new version (return 2)
+#
+# NOTE: Mismatched scripts are not executed. To install updated scripts, regenerate checksums.yaml.
 #
 # Arguments:
 #   $1 - URL to fetch
@@ -419,10 +370,6 @@ fetch_and_run_with_recovery() {
             1)
                 # Abort - user or policy chose to abort
                 return 1
-                ;;
-            2)
-                # Proceed - run with new version
-                echo -e "${GREEN}Proceeding:${NC} $name (new version accepted)" >&2
                 ;;
             *)
                 # Unknown result, abort for safety
@@ -679,13 +626,12 @@ handle_all_checksum_mismatches() {
     fi
 
     echo "Options:" >&2
-    echo "  [P] Proceed with new versions (update checksums.yaml later)" >&2
     echo "  [S] Skip mismatched tools, install everything else" >&2
     echo "  [A] Abort installation" >&2
     echo "" >&2
 
     local choice
-    read -r -p "Choice [P/s/a]: " choice < /dev/tty
+    read -r -p "Choice [s/A]: " choice < /dev/tty
 
     case "${choice,,}" in
         s|skip)
@@ -703,15 +649,9 @@ handle_all_checksum_mismatches() {
             clear_checksum_mismatches
             return 0
             ;;
-        a|abort)
+        a|abort|"")
             echo -e "${RED}Installation aborted by user.${NC}" >&2
             return 1
-            ;;
-        p|proceed|"")
-            # Proceed with new versions (default)
-            echo -e "${GREEN}Proceeding with updated installers...${NC}" >&2
-            clear_checksum_mismatches
-            return 0
             ;;
         *)
             echo "Invalid choice. Aborting for safety." >&2
@@ -722,15 +662,13 @@ handle_all_checksum_mismatches() {
 
 # Internal: Handle mismatches in non-interactive mode
 #
-# Rules (updated for bulletproof automation):
-#   - TRUSTED source mismatch → auto-accept with warning (never blocks)
-#   - CRITICAL tool from UNTRUSTED source → abort (security risk)
+# Rules:
+#   - CRITICAL tool mismatch → abort
 #   - RECOMMENDED tool mismatch → auto-skip with warning
 #
 _handle_mismatches_noninteractive() {
-    local has_critical_untrusted=false
-    local critical_untrusted_names=()
-    local trusted_accepted=()
+    local has_critical=false
+    local critical_names=()
 
     echo "" >&2
     echo -e "${YELLOW}Checksum mismatches detected (non-interactive mode):${NC}" >&2
@@ -739,26 +677,19 @@ _handle_mismatches_noninteractive() {
     for entry in "${CHECKSUM_MISMATCHES[@]}"; do
         IFS="|" read -r tool url expected actual <<< "$entry"
 
-        # TRUSTED SOURCES: Always auto-accept (bulletproof automation)
-        if is_trusted_source "$url"; then
-            echo -e "  ${GREEN}[trusted]${NC} $tool - auto-accepting updated checksum" >&2
-            trusted_accepted+=("$tool")
-            continue
-        fi
-
-        # Non-trusted sources: use old critical/recommended logic
         local is_crit=false
-        if declare -f is_critical_tool &>/dev/null && is_critical_tool "$tool"; then
+        if [[ "${ACFS_STRICT_MODE:-false}" == "true" ]]; then
             is_crit=true
-            has_critical_untrusted=true
-            critical_untrusted_names+=("$tool")
+        elif declare -f is_critical_tool &>/dev/null && is_critical_tool "$tool"; then
+            is_crit=true
         fi
 
         if [[ "$is_crit" == "true" ]]; then
-            echo -e "  ${RED}[CRITICAL-UNTRUSTED]${NC} $tool - checksum mismatch" >&2
+            echo -e "  ${RED}[CRITICAL]${NC} $tool - checksum mismatch" >&2
+            has_critical=true
+            critical_names+=("$tool")
         else
             echo -e "  ${YELLOW}[skipping]${NC} $tool - checksum mismatch" >&2
-            # Auto-skip recommended tools from untrusted sources
             if declare -f handle_tool_failure &>/dev/null; then
                 handle_tool_failure "$tool" "Checksum mismatch (auto-skipped in non-interactive mode)"
             else
@@ -769,20 +700,13 @@ _handle_mismatches_noninteractive() {
 
     echo "" >&2
 
-    # Report trusted sources that were auto-accepted
-    if [[ ${#trusted_accepted[@]} -gt 0 ]]; then
-        echo -e "${GREEN}Auto-accepted ${#trusted_accepted[@]} tool(s) from trusted sources: ${trusted_accepted[*]}${NC}" >&2
-    fi
-
-    # Only abort if there are critical tools from UNTRUSTED sources
-    if [[ "$has_critical_untrusted" == "true" ]]; then
-        echo -e "${RED}ABORTING: Critical tools from UNTRUSTED sources have checksum mismatches: ${critical_untrusted_names[*]}${NC}" >&2
-        echo "Cannot proceed safely without verified critical installers from untrusted sources." >&2
+    if [[ "$has_critical" == "true" ]]; then
+        echo -e "${RED}ABORTING: Critical tools have checksum mismatches: ${critical_names[*]}${NC}" >&2
+        echo "Cannot proceed safely without verified critical installers." >&2
         return 1
     fi
 
-    # All trusted sources accepted, non-critical untrusted skipped - continue
-    echo -e "${GREEN}Proceeding with installation (trusted sources accepted, non-critical skipped).${NC}" >&2
+    echo -e "${GREEN}Proceeding with installation (non-critical mismatches skipped).${NC}" >&2
     clear_checksum_mismatches
     return 0
 }
@@ -792,7 +716,7 @@ _handle_mismatches_noninteractive() {
 # Related: agentic_coding_flywheel_setup-anq
 # ============================================================
 
-# Handle a single checksum mismatch with skip/abort/proceed options
+# Handle a single checksum mismatch with skip/abort options
 #
 # This function provides immediate per-tool handling when not using
 # batch mode (handle_all_checksum_mismatches).
@@ -810,7 +734,6 @@ _handle_mismatches_noninteractive() {
 # Returns:
 #   0 - Skip this tool, continue installation
 #   1 - Abort installation
-#   2 - Proceed anyway (use the new version)
 #
 handle_checksum_mismatch() {
     local tool="$1"
@@ -826,10 +749,10 @@ handle_checksum_mismatch() {
         return 1
     fi
 
-    # If batch mode is enabled, just record and return proceed
+    # If batch mode is enabled, record and skip (fail closed)
     if [[ "${ACFS_BATCH_CHECKSUMS:-false}" == "true" ]]; then
         record_checksum_mismatch "$tool" "$url" "$expected" "$actual"
-        return 2  # Caller should proceed (batch handler decides later)
+        return 0
     fi
 
     # Source tools.sh for classification if not already loaded
@@ -846,20 +769,8 @@ handle_checksum_mismatch() {
 
     # Non-interactive mode
     if ! _acfs_is_interactive; then
-        # TRUSTED SOURCES: Auto-accept checksum changes with warning
-        # This is the key to bulletproof automation - trusted sources are almost
-        # never compromised, and stale checksums are the #1 cause of install failures
-        if is_trusted_source "$url"; then
-            echo -e "${YELLOW}NOTICE: Checksum changed for $tool (trusted source: auto-accepting)${NC}" >&2
-            echo -e "  Expected: ${expected:0:16}..." >&2
-            echo -e "  Actual:   ${actual:0:16}..." >&2
-            echo -e "  ${GREEN}Proceeding with updated version from trusted source${NC}" >&2
-            return 2  # Proceed
-        fi
-
-        # Non-trusted sources: fall back to old behavior
         if [[ "$is_critical" == "true" ]]; then
-            echo -e "${RED}CRITICAL tool $tool has checksum mismatch (untrusted source) - aborting${NC}" >&2
+            echo -e "${RED}CRITICAL tool $tool has checksum mismatch - aborting${NC}" >&2
             return 1  # Abort
         else
             echo -e "${YELLOW}Skipping $tool (checksum mismatch, non-interactive)${NC}" >&2
@@ -890,7 +801,6 @@ handle_checksum_mismatch() {
     echo "This usually means the upstream script was updated." >&2
     echo "" >&2
     echo "Options:" >&2
-    echo "  [P] Proceed with new version" >&2
     echo "  [S] Skip this tool" >&2
     echo "  [A] Abort installation" >&2
     echo "" >&2
@@ -900,7 +810,7 @@ handle_checksum_mismatch() {
     fi
 
     local choice
-    read -r -p "Choice [P/s/a]: " choice < /dev/tty
+    read -r -p "Choice [s/A]: " choice < /dev/tty
 
     case "${choice,,}" in
         s|skip)
@@ -909,13 +819,9 @@ handle_checksum_mismatch() {
             fi
             return 0  # Skip
             ;;
-        a|abort)
+        a|abort|"")
             echo -e "${RED}Installation aborted by user.${NC}" >&2
             return 1  # Abort
-            ;;
-        p|proceed|"")
-            echo -e "${GREEN}Proceeding with new version of $tool...${NC}" >&2
-            return 2  # Proceed
             ;;
         *)
             echo "Invalid choice. Aborting for safety." >&2
