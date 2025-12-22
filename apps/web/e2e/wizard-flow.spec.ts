@@ -566,8 +566,9 @@ test.describe("Complete Wizard Flow Integration", () => {
     await page.click('button:has-text("continue")');
     await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/preflight-check"));
 
-    // Step 8: Pre-Flight Check
+    // Step 8: Pre-Flight Check - check the "passed" checkbox to enable continue button
     await expect(page.locator("h1").first()).toContainText(/pre-?flight|check/i);
+    await page.click('label:has-text("Pre-flight passed")');
     await page.click('button:has-text("continue")');
     await expect(page).toHaveURL(urlPathWithOptionalQuery("/wizard/run-installer"));
 
