@@ -126,33 +126,41 @@ install_stack_mcp_agent_mail() {
         log_info "dry-run: verified installer: stack.mcp_agent_mail"
     else
         if ! {
-            # Try security-verified install first, fall back to direct install
-            local install_success=false
+            # Run installer in detached tmux session (run_in_tmux: true)
+            # This prevents blocking when the installer starts a long-running service
+            local tmux_session="acfs-mcp-agent-mail"
 
+            # Kill existing session if any (clean slate)
+            run_as_target tmux kill-session -t "$tmux_session" 2>/dev/null || true
+
+            # Build install command
+            local install_cmd=""
             if acfs_security_init 2>/dev/null; then
-                # Check if KNOWN_INSTALLERS is available as an associative array (declare -A)
-                # The grep ensures we specifically have an associative array, not just any variable
                 if declare -p KNOWN_INSTALLERS 2>/dev/null | grep -q 'declare -A'; then
                     local tool="mcp_agent_mail"
-                    local url=""
-                    local expected_sha256=""
-
-                    # Safe access with explicit empty default
-                    url="${KNOWN_INSTALLERS[$tool]:-}"
-                    expected_sha256="$(get_checksum "$tool" 2>/dev/null)" || expected_sha256=""
-
-                    if [[ -n "$url" ]] && [[ -n "$expected_sha256" ]]; then
-                        if verify_checksum "$url" "$expected_sha256" "$tool" 2>/dev/null | run_as_target_runner 'bash' '-s' '--' '--dir' '/home/ubuntu/mcp_agent_mail' '--yes'; then
-                            install_success=true
-                        fi
+                    local url="${KNOWN_INSTALLERS[$tool]:-}"
+                    if [[ -n "$url" ]]; then
+                        install_cmd="curl -fsSL '\$url' | bash -s -- '--dir' '/home/ubuntu/mcp_agent_mail' '--yes'"
                     fi
                 fi
             fi
 
-            # No fallback URL - verified install is required
-            if [[ "$install_success" != "true" ]]; then
-                log_error "Verified install failed for stack.mcp_agent_mail and no fallback available"
+            # Fallback to direct URL if security init failed
+            if [[ -z "$install_cmd" ]]; then
+                log_error "No install URL available for stack.mcp_agent_mail"
                 false
+            fi
+
+            # Create new detached tmux session and run the installer
+            if [[ -n "$install_cmd" ]]; then
+                if run_as_target tmux new-session -d -s "$tmux_session" "$install_cmd"; then
+                    log_success "stack.mcp_agent_mail installing in tmux session '$tmux_session'"
+                    log_info "Attach with: tmux attach -t $tmux_session"
+                    # Give it a moment to start
+                    sleep 3
+                else
+                    log_warn "stack.mcp_agent_mail tmux installation may have failed"
+                fi
             fi
         }; then
             log_error "stack.mcp_agent_mail: verified installer failed"

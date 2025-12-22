@@ -55,6 +55,8 @@ export const ModuleSchema = z
         // Fallback URL for direct install if verified install fails
         // This provides graceful degradation when security verification isn't available
         fallback_url: z.string().url().optional(),
+        // Run installer in detached tmux session (prevents blocking for long-running services)
+        run_in_tmux: z.boolean().default(false),
       })
       .optional(),
 

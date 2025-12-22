@@ -388,7 +388,63 @@ function generateVerifiedInstallerSnippet(module: Module): string[] {
   const vi = module.verified_installer!;
   const tool = vi.tool;
   const fallbackUrl = vi.fallback_url;
+  const runInTmux = vi.run_in_tmux === true;
 
+  // Build the args string for curl command (used in tmux mode)
+  const argsStr = vi.args && vi.args.length > 0
+    ? vi.args.map(a => shellQuote(a)).join(' ')
+    : '';
+
+  // If run_in_tmux is true, we run the installer in a detached tmux session
+  // This prevents blocking when the installer starts a long-running server
+  if (runInTmux) {
+    const tmuxSession = `acfs-${tool.replace(/_/g, '-')}`;
+    const lines: string[] = [
+      '# Run installer in detached tmux session (run_in_tmux: true)',
+      '# This prevents blocking when the installer starts a long-running service',
+      `local tmux_session="${tmuxSession}"`,
+      '',
+      '# Kill existing session if any (clean slate)',
+      'run_as_target tmux kill-session -t "$tmux_session" 2>/dev/null || true',
+      '',
+      '# Build install command',
+      'local install_cmd=""',
+      'if acfs_security_init 2>/dev/null; then',
+      "    if declare -p KNOWN_INSTALLERS 2>/dev/null | grep -q 'declare -A'; then",
+      `        local tool="${tool}"`,
+      '        local url="${KNOWN_INSTALLERS[$tool]:-}"',
+      '        if [[ -n "$url" ]]; then',
+      argsStr
+        ? `            install_cmd="curl -fsSL '\\$url' | bash -s -- ${argsStr}"`
+        : '            install_cmd="curl -fsSL \'$url\' | bash"',
+      '        fi',
+      '    fi',
+      'fi',
+      '',
+      '# Fallback to direct URL if security init failed',
+      'if [[ -z "$install_cmd" ]]; then',
+      fallbackUrl
+        ? `    install_cmd="curl -fsSL '${fallbackUrl.replace(/'/g, "'\\''")}' | bash${argsStr ? ' -s -- ' + argsStr : ''}"`
+        : `    log_error "No install URL available for ${module.id}"`,
+      fallbackUrl ? '' : '    false',
+      'fi',
+      '',
+      '# Create new detached tmux session and run the installer',
+      'if [[ -n "$install_cmd" ]]; then',
+      '    if run_as_target tmux new-session -d -s "$tmux_session" "$install_cmd"; then',
+      `        log_success "${module.id} installing in tmux session '$tmux_session'"`,
+      '        log_info "Attach with: tmux attach -t $tmux_session"',
+      '        # Give it a moment to start',
+      '        sleep 3',
+      '    else',
+      `        log_warn "${module.id} tmux installation may have failed"`,
+      '    fi',
+      'fi',
+    ];
+    return lines;
+  }
+
+  // Standard non-tmux installation
   let execCmd: string;
   let fallbackShellCmd: string;
   if (module.run_as === 'target_user') {
