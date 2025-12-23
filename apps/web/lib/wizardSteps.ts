@@ -25,7 +25,7 @@ export const WIZARD_STEPS: WizardStep[] = [
   {
     id: 1,
     title: "Choose Your OS",
-    description: "Select whether you're using Mac or Windows",
+    description: "Select whether you're using Mac, Windows, or Linux",
     slug: "os-selection",
   },
   {
