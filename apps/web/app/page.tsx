@@ -586,7 +586,7 @@ function AboutSection() {
 
 // "Is This For You?" Decision Section
 const FOR_YOU_ITEMS = [
-  { text: "You want AI to write real, production code for you", detail: "Full implementations, not just suggestions" },
+  { text: "You want AI to write real, production code for you", detail: "Complete features, entire modules" },
   { text: "You're willing to invest ~$500/month in AI subscriptions", detail: "Claude Max + GPT Pro + VPS hosting" },
   { text: "You can follow step-by-step instructions", detail: "No coding experience required, just patience" },
   { text: "You have 30+ minutes for initial setup", detail: "One-time investment, then you're ready" },
