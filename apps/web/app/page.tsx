@@ -15,6 +15,11 @@ import {
   Sparkles,
   ChevronRight,
   MessageCircle,
+  Check,
+  X,
+  Server,
+  Bot,
+  Coins,
 } from "lucide-react";
 import { motion, AnimatePresence } from "@/components/motion";
 import { Button } from "@/components/ui/button";
@@ -579,6 +584,183 @@ function AboutSection() {
   );
 }
 
+// "Is This For You?" Decision Section
+const FOR_YOU_ITEMS = [
+  { text: "You want AI to write real, production code for you", detail: "Not just suggestions—full implementations" },
+  { text: "You're willing to invest ~$500/month in AI subscriptions", detail: "Claude Max + GPT Pro + VPS hosting" },
+  { text: "You can follow step-by-step instructions", detail: "No coding experience required, just patience" },
+  { text: "You have 30+ minutes for initial setup", detail: "One-time investment, then you're ready" },
+];
+
+const NOT_FOR_YOU_ITEMS = [
+  { text: "You want a completely free solution", detail: "AI subscriptions have real costs" },
+  { text: "You only want occasional AI help with snippets", detail: "This is for full agentic workflows" },
+  { text: "You're looking for mobile-first development", detail: "This requires a desktop or laptop" },
+  { text: "You need enterprise compliance out of the box", detail: "This is for individual developers" },
+];
+
+function IsThisForYouSection() {
+  const { ref, isInView } = useScrollReveal({ threshold: 0.1 });
+
+  return (
+    <section ref={ref as React.RefObject<HTMLElement>} className="border-t border-border/30 py-24 relative overflow-hidden">
+      <div className="pointer-events-none absolute -left-40 top-1/2 h-80 w-80 -translate-y-1/2 rounded-full bg-[oklch(0.72_0.19_145/0.08)] blur-[100px]" />
+      <div className="pointer-events-none absolute -right-40 top-1/2 h-80 w-80 -translate-y-1/2 rounded-full bg-[oklch(0.65_0.22_25/0.08)] blur-[100px]" />
+
+      <div className="mx-auto max-w-7xl px-6 relative">
+        <motion.div className="mb-12 text-center" initial={{ opacity: 0, y: 20 }} animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }} transition={springs.smooth}>
+          <div className="mb-4 flex items-center justify-center gap-3">
+            <div className="h-px w-8 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+            <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-primary">Honest Assessment</span>
+            <div className="h-px w-8 bg-gradient-to-l from-transparent via-primary/50 to-transparent" />
+          </div>
+          <h2 className="mb-4 font-mono text-3xl font-bold tracking-tight sm:text-4xl">Is This For You?</h2>
+          <p className="mx-auto max-w-2xl text-muted-foreground">We believe in radical transparency. Here&apos;s who will get the most value from this setup.</p>
+        </motion.div>
+
+        <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
+          {/* For You Card */}
+          <motion.div className="relative overflow-hidden rounded-2xl border border-[oklch(0.72_0.19_145/0.3)] bg-gradient-to-br from-[oklch(0.72_0.19_145/0.05)] to-transparent p-6 sm:p-8" initial={{ opacity: 0, x: -30 }} animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -30 }} transition={{ ...springs.smooth, delay: 0.1 }}>
+            <div className="pointer-events-none absolute -right-20 -top-20 h-40 w-40 rounded-full bg-[oklch(0.72_0.19_145/0.15)] blur-3xl" />
+            <div className="relative">
+              <div className="mb-6 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[oklch(0.72_0.19_145/0.2)]">
+                  <Check className="h-5 w-5 text-[oklch(0.72_0.19_145)]" />
+                </div>
+                <h3 className="font-mono text-xl font-bold text-[oklch(0.72_0.19_145)]">This is for you if...</h3>
+              </div>
+              <ul className="space-y-4">
+                {FOR_YOU_ITEMS.map((item, i) => (
+                  <motion.li key={item.text} className="group flex gap-3" initial={{ opacity: 0, x: -10 }} animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: -10 }} transition={{ ...springs.smooth, delay: 0.15 + i * 0.05 }}>
+                    <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[oklch(0.72_0.19_145/0.2)]">
+                      <Check className="h-3 w-3 text-[oklch(0.72_0.19_145)]" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">{item.text}</p>
+                      <p className="text-sm text-muted-foreground">{item.detail}</p>
+                    </div>
+                  </motion.li>
+                ))}
+              </ul>
+            </div>
+          </motion.div>
+
+          {/* Not For You Card */}
+          <motion.div className="relative overflow-hidden rounded-2xl border border-[oklch(0.65_0.22_25/0.3)] bg-gradient-to-br from-[oklch(0.65_0.22_25/0.05)] to-transparent p-6 sm:p-8" initial={{ opacity: 0, x: 30 }} animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: 30 }} transition={{ ...springs.smooth, delay: 0.1 }}>
+            <div className="pointer-events-none absolute -left-20 -top-20 h-40 w-40 rounded-full bg-[oklch(0.65_0.22_25/0.15)] blur-3xl" />
+            <div className="relative">
+              <div className="mb-6 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[oklch(0.65_0.22_25/0.2)]">
+                  <X className="h-5 w-5 text-[oklch(0.65_0.22_25)]" />
+                </div>
+                <h3 className="font-mono text-xl font-bold text-[oklch(0.65_0.22_25)]">This is not for you if...</h3>
+              </div>
+              <ul className="space-y-4">
+                {NOT_FOR_YOU_ITEMS.map((item, i) => (
+                  <motion.li key={item.text} className="group flex gap-3" initial={{ opacity: 0, x: 10 }} animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: 10 }} transition={{ ...springs.smooth, delay: 0.15 + i * 0.05 }}>
+                    <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[oklch(0.65_0.22_25/0.2)]">
+                      <X className="h-3 w-3 text-[oklch(0.65_0.22_25)]" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">{item.text}</p>
+                      <p className="text-sm text-muted-foreground">{item.detail}</p>
+                    </div>
+                  </motion.li>
+                ))}
+              </ul>
+            </div>
+          </motion.div>
+        </div>
+
+        <motion.div className="mt-10 text-center" initial={{ opacity: 0, y: 10 }} animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }} transition={{ ...springs.smooth, delay: 0.5 }}>
+          <p className="mb-4 text-muted-foreground">Sound like you? Let&apos;s talk about the investment.</p>
+          <Button asChild variant="outline" className="border-primary/30 hover:bg-primary/10">
+            <a href="#pricing">See Full Cost Breakdown<ChevronRight className="ml-2 h-4 w-4" /></a>
+          </Button>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+// "What Does This Cost?" Pricing Section
+const PRICING_ITEMS = [
+  { name: "Cloud VPS", price: "$26–56", period: "/month", description: "Ubuntu server (Hetzner, Vultr, etc.)", icon: Server, gradient: "from-sky-400 to-blue-500", note: "4-8 vCPUs recommended" },
+  { name: "Claude Max", price: "$200", period: "/month", description: "Anthropic's Claude Code CLI", icon: Bot, gradient: "from-amber-400 to-orange-500", note: "$400 for power users (2 accounts)" },
+  { name: "GPT Pro", price: "$200", period: "/month", description: "OpenAI's Codex CLI access", icon: Cpu, gradient: "from-emerald-400 to-teal-500", note: "Optional but recommended" },
+];
+
+function WhatDoesThisCostSection() {
+  const { ref, isInView } = useScrollReveal({ threshold: 0.1 });
+
+  return (
+    <section id="pricing" ref={ref as React.RefObject<HTMLElement>} className="border-t border-border/30 bg-card/20 py-24 relative overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 bg-grid-pattern opacity-20" />
+
+      <div className="mx-auto max-w-7xl px-6 relative">
+        <motion.div className="mb-12 text-center" initial={{ opacity: 0, y: 20 }} animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }} transition={springs.smooth}>
+          <div className="mb-4 flex items-center justify-center gap-3">
+            <div className="h-px w-8 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+            <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-primary">Investment</span>
+            <div className="h-px w-8 bg-gradient-to-l from-transparent via-primary/50 to-transparent" />
+          </div>
+          <h2 className="mb-4 font-mono text-3xl font-bold tracking-tight sm:text-4xl">What Does This Cost?</h2>
+          <p className="mx-auto max-w-2xl text-muted-foreground">Complete transparency: here&apos;s what you&apos;ll actually pay each month. The tools themselves are free—you pay for the AI services.</p>
+        </motion.div>
+
+        <motion.div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 mb-10" variants={staggerContainer} initial="hidden" animate={isInView ? "visible" : "hidden"}>
+          {PRICING_ITEMS.map((item, i) => (
+            <motion.div key={item.name} className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card/50 p-6 backdrop-blur-sm transition-all duration-300 hover:border-primary/30" variants={fadeUp} transition={{ delay: staggerDelay(i, 0.1) }} whileHover={{ y: -4, boxShadow: "0 20px 40px -12px oklch(0.75 0.18 195 / 0.15)" }}>
+              <motion.div className={`pointer-events-none absolute -right-20 -top-20 h-40 w-40 rounded-full bg-gradient-to-br ${item.gradient} blur-3xl opacity-0 group-hover:opacity-20 transition-opacity`} />
+              <div className="relative">
+                <div className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${item.gradient}`}>
+                  <item.icon className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="mb-1 text-lg font-semibold">{item.name}</h3>
+                <div className="mb-2 flex items-baseline gap-1">
+                  <span className="text-3xl font-bold text-gradient-cosmic">{item.price}</span>
+                  <span className="text-sm text-muted-foreground">{item.period}</span>
+                </div>
+                <p className="mb-3 text-sm text-muted-foreground">{item.description}</p>
+                <p className="text-xs text-muted-foreground/70 italic">{item.note}</p>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        <motion.div className="relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-r from-primary/5 via-[oklch(0.7_0.2_330/0.05)] to-primary/5 p-6 sm:p-8" initial={{ opacity: 0, scale: 0.95 }} animate={isInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.95 }} transition={{ ...springs.smooth, delay: 0.4 }}>
+          <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:justify-between sm:text-left">
+            <div className="flex items-center gap-4">
+              <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/20">
+                <Coins className="h-7 w-7 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Estimated Monthly Total</p>
+                <p className="font-mono text-2xl font-bold sm:text-3xl">
+                  <span className="text-gradient-cosmic">$426 – $656</span>
+                  <span className="text-base font-normal text-muted-foreground">/month</span>
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2 text-sm text-muted-foreground sm:items-end">
+              <div className="flex items-center gap-2"><Check className="h-4 w-4 text-[oklch(0.72_0.19_145)]" /><span>All tools & setup scripts included free</span></div>
+              <div className="flex items-center gap-2"><Check className="h-4 w-4 text-[oklch(0.72_0.19_145)]" /><span>Cancel AI subscriptions anytime</span></div>
+              <div className="flex items-center gap-2"><Check className="h-4 w-4 text-[oklch(0.72_0.19_145)]" /><span>No hidden fees or upsells</span></div>
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div className="mt-10 text-center" initial={{ opacity: 0, y: 10 }} animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }} transition={{ ...springs.smooth, delay: 0.5 }}>
+          <p className="mb-6 max-w-2xl mx-auto text-muted-foreground">Consider: a junior developer costs $5,000+/month. For under $700, you get <strong className="text-foreground">three AI agents</strong> working 24/7, writing code while you sleep.</p>
+          <Button asChild size="lg" className="bg-primary text-primary-foreground">
+            <Link href="/wizard/os-selection">Start Your Setup<ArrowRight className="ml-2 h-4 w-4" /></Link>
+          </Button>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
 function StatBadge({ value, label }: { value: string; label: string }) {
   return (
     <div className="flex flex-col items-center gap-1 px-4">
@@ -765,6 +947,12 @@ export default function HomePage() {
 
         {/* Workflow Steps Preview */}
         <WorkflowStepsSection />
+
+        {/* Is This For You? Section */}
+        <IsThisForYouSection />
+
+        {/* Pricing Section */}
+        <WhatDoesThisCostSection />
 
         {/* About Section */}
         <AboutSection />
