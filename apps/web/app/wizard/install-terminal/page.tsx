@@ -233,12 +233,20 @@ function TerminalBasicsSection({ os }: { os: "mac" | "windows" | "linux" }) {
               <li><strong>Alternative:</strong> Right-click → Paste</li>
             </ul>
           </AlertCard>
-        ) : (
+        ) : os === "windows" ? (
           <AlertCard variant="info" title="Windows Terminal Copy/Paste">
             <ul className="mt-1 list-disc space-y-1 pl-4">
               <li><strong>Copy from wizard:</strong> Click the copy button on any command (or Ctrl+C)</li>
               <li><strong>Paste into terminal:</strong> <strong>Right-click</strong> anywhere in the terminal, OR press <kbd className="rounded bg-muted px-1 py-0.5 font-mono text-xs">Ctrl</kbd> + <kbd className="rounded bg-muted px-1 py-0.5 font-mono text-xs">Shift</kbd> + <kbd className="rounded bg-muted px-1 py-0.5 font-mono text-xs">V</kbd></li>
               <li><strong>Note:</strong> Ctrl+C in terminal means &quot;cancel&quot;, not copy!</li>
+            </ul>
+          </AlertCard>
+        ) : (
+          <AlertCard variant="info" title="Linux Terminal Copy/Paste">
+            <ul className="mt-1 list-disc space-y-1 pl-4">
+              <li><strong>Copy from wizard:</strong> Click the copy button on any command (or Ctrl+C)</li>
+              <li><strong>Paste into terminal:</strong> Press <kbd className="rounded bg-muted px-1 py-0.5 font-mono text-xs">Ctrl</kbd> + <kbd className="rounded bg-muted px-1 py-0.5 font-mono text-xs">Shift</kbd> + <kbd className="rounded bg-muted px-1 py-0.5 font-mono text-xs">V</kbd> (common), or try right-click</li>
+              <li><strong>Tip:</strong> If Ctrl+Shift+V doesn&apos;t work in your terminal app, look for a &quot;Paste&quot; option in the right-click menu</li>
             </ul>
           </AlertCard>
         )}

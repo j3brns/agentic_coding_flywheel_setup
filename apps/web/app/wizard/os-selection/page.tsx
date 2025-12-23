@@ -209,7 +209,7 @@ export default function OSSelectionPage() {
           {hasDetection ? (
             <>We guessed your OS from your browser. If that&apos;s wrong, pick the other option. Otherwise just hit Continue.</>
           ) : (
-            <>If you&apos;re on a phone/tablet, pick the computer you&apos;ll use for the next steps (Mac or Windows).</>
+            <>If you&apos;re on a phone/tablet, pick the computer you&apos;ll use for the next steps (Mac, Windows, or Linux).</>
           )}
         </p>
       </div>
@@ -229,7 +229,7 @@ export default function OSSelectionPage() {
             computer. It&apos;s like the foundation that everything else runs on top of.
             <br /><br />
             <strong>Mac</strong> = Apple computers (MacBook, iMac, Mac Mini, Mac Studio).
-            If you see an Apple logo  when your computer starts, you have a Mac.
+            If you see an Apple logo when your computer starts, you have a Mac.
             <br /><br />
             <strong>Windows</strong> = Most non-Apple computers (Dell, HP, Lenovo, etc.).
             If you see a Windows logo (four colored squares) when your computer starts,
@@ -244,7 +244,7 @@ export default function OSSelectionPage() {
             <ul className="list-disc space-y-2 pl-5">
               <li>
                 <strong>Mac:</strong> Look at the top-left corner of your screen. Do you
-                see an Apple icon ()? Click it and select &quot;About This Mac&quot; and
+                see an Apple icon ()? Click it and select &quot;About This Mac&quot; and
                 it will say something like &quot;macOS Sonoma&quot; or &quot;macOS Ventura&quot;.
               </li>
               <li>

@@ -446,12 +446,12 @@ export default function RentVPSPage() {
               <li>
                 <strong>Contabo:</strong> Our top recommendation! Best specs for the price.
                 Cloud VPS 50 (64GB RAM, ~$56/month US) is our top pick. Cloud VPS 40 (48GB RAM, ~$36/month US)
-                for budget. Interface is basic but functional. Instant activation.
+                for budget. Interface is basic but functional. Usually activates within minutes (occasionally up to ~1 hour).
               </li>
               <li>
                 <strong>OVH:</strong> Great alternative with polished interface.
                 VPS-5 (64GB RAM, ~$40/month) or VPS-4 (48GB RAM, ~$26/month).
-                Great EU and US data centers. Instant activation.
+                Great EU and US data centers. Typically activates within minutes.
               </li>
             </ul>
             <div className="mt-4 rounded-lg border border-[oklch(0.65_0.15_220/0.3)] bg-[oklch(0.65_0.15_220/0.08)] p-3">
@@ -522,7 +522,7 @@ export default function RentVPSPage() {
 
               <GuideStep number={6} title="Complete the order">
                 Review your order and complete checkout. Contabo activates servers
-                quickly, usually within minutes!
+                quickly, usually within minutes (occasionally up to ~1 hour).
               </GuideStep>
             </div>
           </GuideSection>
