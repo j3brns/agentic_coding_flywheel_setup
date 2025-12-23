@@ -214,6 +214,25 @@ function escapeBash(str: string): string {
     .replace(/`/g, '\\`');   // Backticks (prevents command substitution)
 }
 
+/**
+ * Encode a doctor-check command into a single-line, tab-safe representation.
+ *
+ * Why:
+ * - We store checks as tab-delimited records in a bash array.
+ * - `read` consumes a single line, so raw newlines in commands break parsing.
+ *
+ * Encoding rules (decoded via `printf '%b'` at runtime):
+ * - Backslash -> \\ (preserves literal backslashes, prevents accidental escape decoding)
+ * - Tab -> \t  (keeps records parseable)
+ * - Newline -> \n (restores multi-line scripts when running the check)
+ */
+function encodeDoctorCommand(cmd: string): string {
+  return cmd
+    .replace(/\\/g, '\\\\')
+    .replace(/\t/g, '\\t')
+    .replace(/\r?\n/g, '\\n');
+}
+
 function indentLines(lines: string[], spaces: number): string[] {
   const pad = ' '.repeat(spaces);
   return lines.map((line) => (line.length === 0 ? line : `${pad}${line}`));
@@ -766,6 +785,7 @@ function generateDoctorChecks(manifest: Manifest): string {
   lines.push('# Doctor checks generated from manifest');
   lines.push('# Format: ID<TAB>DESCRIPTION<TAB>CHECK_COMMAND<TAB>REQUIRED/OPTIONAL');
   lines.push('# Using tab delimiter to avoid conflicts with | in shell commands');
+  lines.push('# Commands are encoded (\\n, \\t, \\\\) and decoded via printf before execution');
   lines.push('');
 
   // Export check array
@@ -782,9 +802,10 @@ function generateDoctorChecks(manifest: Manifest): string {
       const cleanCmd = verify.replace(/\s*\|\|\s*true\s*$/, '').trim();
       const suffix = module.verify.length > 1 ? `.${i + 1}` : '';
       const description = escapeBash(module.description);
+      const encodedCmd = encodeDoctorCommand(cleanCmd);
 
       // Use tab delimiter (\t) instead of pipe to avoid conflicts with || in commands
-      lines.push(`    "${checkId}${suffix}\t${description}\t${escapeBash(cleanCmd)}\t${isOptional ? 'optional' : 'required'}"`);
+      lines.push(`    "${checkId}${suffix}\t${description}\t${escapeBash(encodedCmd)}\t${isOptional ? 'optional' : 'required'}"`);
     }
   }
 
@@ -801,6 +822,7 @@ function generateDoctorChecks(manifest: Manifest): string {
   lines.push('    for check in "${MANIFEST_CHECKS[@]}"; do');
   lines.push('        # Use tab as delimiter (safe - won\'t appear in commands)');
   lines.push('        IFS=$\'\\t\' read -r id desc cmd optional <<< "$check"');
+  lines.push('        cmd="$(printf \'%b\' "$cmd")"');
   lines.push('        ');
   // Run checks in a subshell to avoid leaking side effects into this script.
   // Enable pipefail so pipeline-based checks behave as expected.

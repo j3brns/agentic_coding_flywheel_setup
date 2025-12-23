@@ -233,6 +233,14 @@ describe('doctor_checks.sh content', () => {
     // Tab character should be present in the entries
     expect(doctorContent).toContain('\\t');
   });
+
+  test('multiline verify commands are encoded as single-line records', () => {
+    // lang.nvm verify is a YAML literal block (multi-line). The generator must encode it
+    // so the MANIFEST_CHECKS record stays on one line and can be parsed via read/IFS.
+    const nvmLine = doctorContent.match(/^    "lang\.nvm[^\n]*"$/m);
+    expect(nvmLine).not.toBeNull();
+    expect(nvmLine![0]).toContain('\\\\n');
+  });
 });
 
 describe('Utils: sortModulesByInstallOrder', () => {

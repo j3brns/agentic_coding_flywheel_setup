@@ -61,6 +61,7 @@ acfs_security_init() {
 # Doctor checks generated from manifest
 # Format: ID<TAB>DESCRIPTION<TAB>CHECK_COMMAND<TAB>REQUIRED/OPTIONAL
 # Using tab delimiter to avoid conflicts with | in shell commands
+# Commands are encoded (\n, \t, \\) and decoded via printf before execution
 
 declare -a MANIFEST_CHECKS=(
     "base.system.1	Base packages + sane defaults	curl --version	required"
@@ -93,9 +94,7 @@ declare -a MANIFEST_CHECKS=(
     "lang.rust.1	Rust nightly + cargo	~/.cargo/bin/cargo --version	required"
     "lang.rust.2	Rust nightly + cargo	~/.cargo/bin/rustup show | grep -q nightly	required"
     "lang.go	Go toolchain	go version	required"
-    "lang.nvm	nvm + latest Node.js	export NVM_DIR=\"\$HOME/.nvm\"
-[ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"
-node --version	required"
+    "lang.nvm	nvm + latest Node.js	export NVM_DIR=\"\$HOME/.nvm\"\\n[ -s \"\$NVM_DIR/nvm.sh\" ] && . \"\$NVM_DIR/nvm.sh\"\\nnode --version	required"
     "tools.atuin	Atuin shell history (Ctrl-R superpowers)	~/.atuin/bin/atuin --version	required"
     "tools.zoxide	Zoxide (better cd)	command -v zoxide	required"
     "tools.ast_grep	ast-grep (used by UBS for syntax-aware scanning)	sg --version	required"
@@ -133,6 +132,7 @@ run_manifest_checks() {
     for check in "${MANIFEST_CHECKS[@]}"; do
         # Use tab as delimiter (safe - won't appear in commands)
         IFS=$'\t' read -r id desc cmd optional <<< "$check"
+        cmd="$(printf '%b' "$cmd")"
         
         if bash -o pipefail -c "$cmd" &>/dev/null; then
             echo -e "\033[0;32m[ok]\033[0m $id - $desc"
