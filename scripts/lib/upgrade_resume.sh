@@ -57,6 +57,13 @@ update_motd_failure() {
     local error_msg="$1"
     local motd_file="/etc/update-motd.d/00-acfs-upgrade"
 
+    # Truncate error message to fit box (max 51 chars for content area)
+    if [[ ${#error_msg} -gt 51 ]]; then
+        error_msg="${error_msg:0:48}..."
+    fi
+    local padded_err
+    padded_err=$(printf "%-51s" "$error_msg")
+
     cat > "$motd_file" << 'MOTD_SCRIPT'
 #!/bin/bash
 C='\033[0;31m'    # Red
@@ -66,27 +73,27 @@ N='\033[0m'       # Reset
 
 echo ""
 echo -e "${C}╔══════════════════════════════════════════════════════════════╗${N}"
-echo -e "${C}║${N}  ${C}${B}     ✖ ACFS UBUNTU UPGRADE FAILED ✖${N}                      ${C}║${N}"
+echo -e "${C}║${N}         ${C}${B}*** ACFS UBUNTU UPGRADE FAILED ***${N}               ${C}║${N}"
 echo -e "${C}╠══════════════════════════════════════════════════════════════╣${N}"
 echo -e "${C}║${N}                                                              ${C}║${N}"
 MOTD_SCRIPT
 
-    # Add the error message
+    # Add the error message with proper padding
     cat >> "$motd_file" << MOTD_ERROR
-echo -e "\${C}║\${N}  \${Y}Error:\${N} ${error_msg}"
+echo -e "\${C}║\${N}  \${Y}Error:\${N} ${padded_err} \${C}║\${N}"
 MOTD_ERROR
 
     cat >> "$motd_file" << 'MOTD_FOOTER'
 echo -e "${C}║${N}                                                              ${C}║${N}"
-echo -e "${C}║${N}  ${B}TO RETRY (AFTER FIXING):${N}                                    ${C}║${N}"
-echo -e "${C}║${N}    sudo systemctl enable --now acfs-upgrade-resume            ${C}║${N}"
+echo -e "${C}║${N}  ${B}TO RETRY (AFTER FIXING):${N}                                   ${C}║${N}"
+echo -e "${C}║${N}    sudo systemctl enable --now acfs-upgrade-resume           ${C}║${N}"
 echo -e "${C}║${N}                                                              ${C}║${N}"
-echo -e "${C}║${N}  ${B}TO CHECK STATUS:${N}                                            ${C}║${N}"
-echo -e "${C}║${N}    /var/lib/acfs/check_status.sh                              ${C}║${N}"
+echo -e "${C}║${N}  ${B}TO CHECK STATUS:${N}                                           ${C}║${N}"
+echo -e "${C}║${N}    /var/lib/acfs/check_status.sh                             ${C}║${N}"
 echo -e "${C}║${N}                                                              ${C}║${N}"
-echo -e "${C}║${N}  ${B}TO VIEW LOGS:${N}                                               ${C}║${N}"
-echo -e "${C}║${N}    journalctl -u acfs-upgrade-resume -f                       ${C}║${N}"
-echo -e "${C}║${N}    cat /var/log/acfs/upgrade_resume.log                       ${C}║${N}"
+echo -e "${C}║${N}  ${B}TO VIEW LOGS:${N}                                              ${C}║${N}"
+echo -e "${C}║${N}    journalctl -u acfs-upgrade-resume -f                      ${C}║${N}"
+echo -e "${C}║${N}    cat /var/log/acfs/upgrade_resume.log                      ${C}║${N}"
 echo -e "${C}║${N}                                                              ${C}║${N}"
 echo -e "${C}╚══════════════════════════════════════════════════════════════╝${N}"
 echo ""
@@ -97,20 +104,50 @@ MOTD_FOOTER
 
 # Remove MOTD
 remove_motd() {
-    rm -f /etc/update-motd.d/00-acfs-upgrade
+    rm -f /etc/update-motd.d/00-acfs-upgrade 2>/dev/null || true
 }
 
-# Launch continue script
+# Update state to mark upgrade as complete
+mark_state_complete() {
+    if [[ -f "$ACFS_STATE_FILE" ]] && command -v jq &>/dev/null; then
+        local tmp_file="${ACFS_STATE_FILE}.tmp"
+        if jq '.ubuntu_upgrade.current_stage = "completed" | .ubuntu_upgrade.needs_reboot = false' "$ACFS_STATE_FILE" > "$tmp_file" 2>/dev/null; then
+            mv "$tmp_file" "$ACFS_STATE_FILE"
+            log "State updated to 'completed'"
+        else
+            rm -f "$tmp_file" 2>/dev/null || true
+        fi
+    fi
+}
+
+# Launch continue script using systemd-run for reliability
+# nohup+background is unreliable when parent service exits
 launch_continue_script() {
-    if [[ -f "${ACFS_RESUME_DIR}/continue_install.sh" ]]; then
-        log "Launching continue_install.sh to resume ACFS installation"
-        nohup bash "${ACFS_RESUME_DIR}/continue_install.sh" >> "$ACFS_LOG" 2>&1 &
-        log "ACFS installation continuation launched (PID: $!)"
-        return 0
-    else
+    local script="${ACFS_RESUME_DIR}/continue_install.sh"
+
+    if [[ ! -f "$script" ]]; then
         log "No continue_install.sh found - manual installation needed"
+        log "Run: curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/agentic_coding_flywheel_setup/main/install.sh | bash -s -- --yes --mode vibe"
         return 1
     fi
+
+    log "Launching continue_install.sh to resume ACFS installation"
+
+    # Use systemd-run to spawn a proper transient service that survives this script's exit
+    if command -v systemd-run &>/dev/null; then
+        systemd-run --unit=acfs-continue-install \
+            --description="ACFS Installation Continuation" \
+            --property=Type=oneshot \
+            --property=TimeoutStartSec=7200 \
+            /bin/bash "$script" >> "$ACFS_LOG" 2>&1 &
+        log "ACFS continuation launched via systemd-run"
+    else
+        # Fallback to nohup if systemd-run unavailable (shouldn't happen on Ubuntu)
+        nohup bash "$script" >> "$ACFS_LOG" 2>&1 &
+        log "ACFS continuation launched via nohup (PID: $!)"
+    fi
+
+    return 0
 }
 
 # ============================================================
@@ -147,15 +184,19 @@ if [[ "$CURRENT_UBUNTU_VERSION" == "$UBUNTU_TARGET_VERSION" ]]; then
     # Disable service FIRST to prevent any possibility of loop
     cleanup_service
 
+    # Update state to mark as complete (before removing files)
+    export ACFS_STATE_FILE="${ACFS_RESUME_DIR}/state.json"
+    mark_state_complete
+
     # Remove MOTD
     remove_motd
 
-    # Clean up resume files
+    # Launch continue script BEFORE removing files (it may need them)
+    launch_continue_script || log "Note: Manual installation may be needed"
+
+    # Clean up resume files (after launching continue script)
     rm -f "${ACFS_RESUME_DIR}/upgrade_resume.sh" 2>/dev/null || true
     rm -rf "${ACFS_LIB_DIR}" 2>/dev/null || true
-
-    # Launch continue script
-    launch_continue_script || true
 
     log "=== Upgrade Resume Complete (target reached) ==="
     exit 0
@@ -232,11 +273,12 @@ if state_upgrade_is_complete; then
     remove_motd
     cleanup_service
 
-    # Clean up resume files
+    # Launch continue script BEFORE cleaning up files (it may need them)
+    launch_continue_script || log "Note: Manual installation may be needed"
+
+    # Clean up resume files (after launching continue script)
     rm -f "${ACFS_RESUME_DIR}/upgrade_resume.sh" 2>/dev/null || true
     rm -rf "${ACFS_LIB_DIR}" 2>/dev/null || true
-
-    launch_continue_script || true
 
     log "=== Upgrade Resume Complete ==="
     exit 0

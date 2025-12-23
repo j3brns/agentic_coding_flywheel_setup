@@ -776,8 +776,10 @@ upgrade_update_motd() {
     local message="${1:-Ubuntu upgrade in progress}"
     local motd_file="/etc/update-motd.d/00-acfs-upgrade"
 
-    # Truncate/pad message to fit (54 chars for content area)
-    local max_len=54
+    # Box is 64 chars wide. Content area = 62 chars.
+    # Status line format: "║  Status: " (11) + message + " ║" (2) = 64
+    # So message max = 64 - 11 - 2 = 51 chars
+    local max_len=51
     if [[ ${#message} -gt $max_len ]]; then
         message="${message:0:$((max_len - 3))}..."
     fi
@@ -785,7 +787,6 @@ upgrade_update_motd() {
     padded_msg=$(printf "%-${max_len}s" "$message")
 
     # Create MOTD script with embedded ANSI colors
-    # Using printf with octal escapes for portability
     cat > "$motd_file" << 'MOTD_HEADER'
 #!/bin/bash
 # ACFS Upgrade MOTD - shows status when user logs in via SSH
@@ -798,14 +799,14 @@ N='\033[0m'       # Reset
 
 echo ""
 echo -e "${C}╔══════════════════════════════════════════════════════════════╗${N}"
-echo -e "${C}║${N}  ${Y}${B}          ⚡ ACFS UPGRADE IN PROGRESS ⚡${N}                 ${C}║${N}"
+echo -e "${C}║${N}       ${Y}${B}>>> ACFS UBUNTU UPGRADE IN PROGRESS <<<${N}             ${C}║${N}"
 echo -e "${C}╠══════════════════════════════════════════════════════════════╣${N}"
 echo -e "${C}║${N}                                                              ${C}║${N}"
 MOTD_HEADER
 
     # Add dynamic status line
     cat >> "$motd_file" << MOTD_STATUS
-echo -e "\${C}║\${N}  \${B}Status:\${N} ${padded_msg}\${C}║\${N}"
+echo -e "\${C}║\${N}  \${B}Status:\${N} ${padded_msg} \${C}║\${N}"
 MOTD_STATUS
 
     cat >> "$motd_file" << 'MOTD_FOOTER'
@@ -816,8 +817,8 @@ echo -e "${C}║${N}                                                            
 echo -e "${C}╠══════════════════════════════════════════════════════════════╣${N}"
 echo -e "${C}║${N}  ${B}MONITOR PROGRESS:${N}                                           ${C}║${N}"
 echo -e "${C}║${N}                                                              ${C}║${N}"
-echo -e "${C}║${N}  ${G}/var/lib/acfs/check_status.sh${N}        (status summary)  ${C}║${N}"
-echo -e "${C}║${N}  ${D}tail -f /var/log/acfs/upgrade_resume.log${N}    (detailed log) ${C}║${N}"
+echo -e "${C}║${N}    ${G}/var/lib/acfs/check_status.sh${N}      (status summary)    ${C}║${N}"
+echo -e "${C}║${N}    ${D}tail -f /var/log/acfs/upgrade_resume.log${N}  (live log)   ${C}║${N}"
 echo -e "${C}║${N}                                                              ${C}║${N}"
 echo -e "${C}╚══════════════════════════════════════════════════════════════╝${N}"
 echo ""
