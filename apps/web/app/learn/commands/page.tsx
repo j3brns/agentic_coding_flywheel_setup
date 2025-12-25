@@ -14,8 +14,10 @@ import {
   Terminal,
   Wrench,
 } from "lucide-react";
+import { motion, AnimatePresence } from "@/components/motion";
 import { Card } from "@/components/ui/card";
 import { CommandCard } from "@/components/command-card";
+import { springs, staggerDelay } from "@/lib/design-tokens";
 
 type CommandCategory =
   | "agents"
@@ -380,17 +382,20 @@ function CategoryChip({
   onClick: () => void;
 }) {
   return (
-    <button
+    <motion.button
       type="button"
       onClick={onClick}
-      className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      transition={springs.stiff}
+      className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
         isSelected
-          ? "border-primary/40 bg-primary/10 text-primary"
+          ? "border-primary/50 bg-primary/15 text-primary shadow-sm shadow-primary/10"
           : "border-border/50 bg-card/40 text-muted-foreground hover:border-primary/30 hover:bg-primary/5 hover:text-foreground"
       }`}
     >
       {label}
-    </button>
+    </motion.button>
   );
 }
 
@@ -399,69 +404,81 @@ function CategoryCard({
   description,
   icon,
   commands,
+  index = 0,
 }: {
   title: string;
   description: string;
   icon: ReactNode;
   commands: CommandEntry[];
+  index?: number;
 }) {
   return (
-    <Card className="overflow-hidden border-border/50 bg-card/50 backdrop-blur-sm">
-      <div className="border-b border-border/30 bg-muted/20 p-5">
-        <div className="flex items-start gap-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            {icon}
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-lg font-semibold">{title}</h2>
-            <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ ...springs.smooth, delay: staggerDelay(index, 0.08) }}
+    >
+      <Card className="group overflow-hidden border-border/50 bg-card/50 backdrop-blur-sm transition-all duration-300 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5">
+        <div className="border-b border-border/30 bg-muted/20 p-5">
+          <div className="flex items-start gap-4">
+            <motion.div
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-all group-hover:bg-primary/20 group-hover:shadow-md group-hover:shadow-primary/10"
+              whileHover={{ scale: 1.05, rotate: 3 }}
+              transition={springs.stiff}
+            >
+              {icon}
+            </motion.div>
+            <div className="min-w-0">
+              <h2 className="text-lg font-semibold">{title}</h2>
+              <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="space-y-6 p-5">
-        {commands.map((cmd) => {
-          const anchorId = toAnchorId(cmd.name);
-          return (
-            <div key={`${cmd.category}:${cmd.name}`} id={anchorId} className="scroll-mt-28">
-              <div className="mb-2 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                <div className="min-w-0">
-                  <div className="flex items-baseline gap-3">
-                    <code className="font-mono text-base font-bold text-foreground">
-                      {cmd.name}
-                    </code>
-                    <span className="text-sm font-medium text-muted-foreground">
-                      {cmd.fullName}
-                    </span>
+        <div className="space-y-6 p-5">
+          {commands.map((cmd) => {
+            const anchorId = toAnchorId(cmd.name);
+            return (
+              <div key={`${cmd.category}:${cmd.name}`} id={anchorId} className="scroll-mt-28">
+                <div className="mb-2 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <div className="flex items-baseline gap-3">
+                      <code className="font-mono text-base font-bold text-foreground">
+                        {cmd.name}
+                      </code>
+                      <span className="text-sm font-medium text-muted-foreground">
+                        {cmd.fullName}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {cmd.description}
+                    </p>
                   </div>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {cmd.description}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Link
-                    href={`#${anchorId}`}
-                    className="text-xs text-muted-foreground hover:text-foreground"
-                  >
-                    #{anchorId}
-                  </Link>
-                  {cmd.learnMoreHref && (
+                  <div className="flex items-center gap-3">
                     <Link
-                      href={cmd.learnMoreHref}
-                      className="text-sm text-primary hover:underline"
+                      href={`#${anchorId}`}
+                      className="text-xs text-muted-foreground hover:text-foreground"
                     >
-                      Full docs →
+                      #{anchorId}
                     </Link>
-                  )}
+                    {cmd.learnMoreHref && (
+                      <Link
+                        href={cmd.learnMoreHref}
+                        className="text-sm text-primary hover:underline"
+                      >
+                        Full docs →
+                      </Link>
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              <CommandCard command={cmd.example} description="Example" />
-            </div>
-          );
-        })}
-      </div>
-    </Card>
+                <CommandCard command={cmd.example} description="Example" />
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+    </motion.div>
   );
 }
 
@@ -508,6 +525,12 @@ export default function CommandReferencePage() {
       <div className="pointer-events-none fixed inset-0 bg-gradient-cosmic opacity-50" />
       <div className="pointer-events-none fixed inset-0 bg-grid-pattern opacity-20" />
 
+      {/* Floating orbs */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute -left-32 top-1/4 h-96 w-96 rounded-full bg-[oklch(0.75_0.18_195/0.08)] blur-[100px] animate-pulse-glow" />
+        <div className="absolute -right-32 top-2/3 h-80 w-80 rounded-full bg-[oklch(0.7_0.2_330/0.06)] blur-[80px] animate-pulse-glow" style={{ animationDelay: "2s" }} />
+      </div>
+
       <div className="relative mx-auto max-w-5xl px-6 py-8 md:px-12 md:py-12">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
@@ -544,14 +567,14 @@ export default function CommandReferencePage() {
         </div>
 
         {/* Search */}
-        <div className="relative mb-6">
-          <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+        <div className="relative mb-6 group">
+          <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" />
           <input
             type="text"
             placeholder="Search commands..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-xl border border-border/50 bg-card/50 py-3 pl-12 pr-4 text-foreground placeholder:text-muted-foreground focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="w-full rounded-xl border border-border/50 bg-card/60 py-3.5 pl-12 pr-4 text-foreground shadow-sm backdrop-blur-sm placeholder:text-muted-foreground transition-all duration-200 focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:shadow-lg focus:shadow-primary/5"
           />
         </div>
 
@@ -575,7 +598,7 @@ export default function CommandReferencePage() {
         {/* Content */}
         <div className="space-y-8">
           {hasAnyResults ? (
-            CATEGORY_META.map((meta) => {
+            CATEGORY_META.map((meta, idx) => {
               const cmds = grouped[meta.id];
               if (cmds.length === 0) return null;
               return (
@@ -585,16 +608,22 @@ export default function CommandReferencePage() {
                   description={meta.description}
                   icon={meta.icon}
                   commands={cmds}
+                  index={idx}
                 />
               );
             })
           ) : (
-            <div className="py-12 text-center">
+            <motion.div
+              className="py-12 text-center"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={springs.smooth}
+            >
               <Search className="mx-auto mb-4 h-12 w-12 text-muted-foreground/50" />
               <p className="text-muted-foreground">
                 No commands match your search.
               </p>
-            </div>
+            </motion.div>
           )}
         </div>
       </div>
