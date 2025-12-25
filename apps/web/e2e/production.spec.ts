@@ -56,7 +56,7 @@ test.describe("Production Smoke Tests", () => {
     await page.goto("/");
     await page.waitForLoadState("networkidle");
 
-    await expect(page.locator("h1")).toBeVisible();
+    await expect(page.locator("h1").first()).toBeVisible();
     expect(failedRequests).toEqual([]);
     expect(jsErrors).toEqual([]);
   });
@@ -67,7 +67,7 @@ test.describe("Production Smoke Tests", () => {
     await page.goto("/learn");
     await page.waitForLoadState("networkidle");
 
-    await expect(page.locator("h1")).toBeVisible();
+    await expect(page.locator("h1").first()).toBeVisible();
     expect(failedRequests).toEqual([]);
     expect(jsErrors).toEqual([]);
   });
@@ -78,7 +78,7 @@ test.describe("Production Smoke Tests", () => {
     await page.goto("/learn/welcome");
     await page.waitForLoadState("networkidle");
 
-    await expect(page.locator("h1")).toBeVisible();
+    await expect(page.locator("h1").first()).toBeVisible();
     expect(failedRequests).toEqual([]);
     expect(jsErrors).toEqual([]);
   });
@@ -89,7 +89,7 @@ test.describe("Production Smoke Tests", () => {
     await page.goto("/learn/commands");
     await page.waitForLoadState("networkidle");
 
-    await expect(page.locator("h1")).toBeVisible();
+    await expect(page.locator("h1").first()).toBeVisible();
     expect(failedRequests).toEqual([]);
     expect(jsErrors).toEqual([]);
   });
@@ -100,7 +100,7 @@ test.describe("Production Smoke Tests", () => {
     await page.goto("/wizard/os-selection");
     await page.waitForLoadState("networkidle");
 
-    await expect(page.locator("h1")).toBeVisible();
+    await expect(page.locator("h1").first()).toBeVisible();
     expect(failedRequests).toEqual([]);
     expect(jsErrors).toEqual([]);
   });

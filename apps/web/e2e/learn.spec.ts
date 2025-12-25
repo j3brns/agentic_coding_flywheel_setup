@@ -19,8 +19,8 @@ test.describe("Learning Hub", () => {
     await page.goto("/learn");
     await page.waitForLoadState("networkidle");
 
-    // Basic content check
-    await expect(page.locator("h1")).toBeVisible();
+    // Basic content check - use first() for strict mode compatibility
+    await expect(page.locator("h1").first()).toBeVisible();
 
     // No JS errors should have occurred
     expect(errors).toEqual([]);
@@ -42,8 +42,8 @@ test.describe("Learning Hub", () => {
     await page.goto("/learn/welcome");
     await page.waitForLoadState("networkidle");
 
-    // Check content loaded
-    await expect(page.locator("h1")).toBeVisible();
+    // Check content loaded - use first() as markdown content may have additional h1 elements
+    await expect(page.locator("h1").first()).toBeVisible();
 
     // No JS errors
     expect(errors).toEqual([]);
@@ -65,7 +65,7 @@ test.describe("Learning Hub", () => {
     await page.goto("/learn/glossary");
     await page.waitForLoadState("networkidle");
 
-    await expect(page.locator("h1")).toBeVisible();
+    await expect(page.locator("h1").first()).toBeVisible();
     expect(errors).toEqual([]);
   });
 
@@ -85,7 +85,7 @@ test.describe("Learning Hub", () => {
     await page.goto("/learn/commands");
     await page.waitForLoadState("networkidle");
 
-    await expect(page.locator("h1")).toBeVisible();
+    await expect(page.locator("h1").first()).toBeVisible();
     expect(errors).toEqual([]);
   });
 });
