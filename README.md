@@ -896,11 +896,11 @@ Deep Checks
 
 ## The Wizard Website
 
-The wizard guides beginners through a **10-step journey** from "I have a laptop" to "AI agents are coding for me":
+The wizard guides beginners through a **13-step journey** from "I have a laptop" to "AI agents are coding for me":
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│  ACFS Wizard                                                   [Step 3/10]  │
+│  ACFS Wizard                                                   [Step 3/13]  │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  ┌────────────────────────────────────────────────────────────────────────┐ │
@@ -918,7 +918,7 @@ The wizard guides beginners through a **10-step journey** from "I have a laptop"
 │  │  [← Previous]                                        [Next Step →]     │ │
 │  └────────────────────────────────────────────────────────────────────────┘ │
 │                                                                             │
-│  Progress: ●●●○○○○○○○                                                      │
+│  Progress: ●●●○○○○○○○○○○                                                   │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -926,16 +926,19 @@ The wizard guides beginners through a **10-step journey** from "I have a laptop"
 
 | Step | Title | What Happens |
 |------|-------|--------------|
-| 1 | **Choose Your OS** | Select Mac or Windows (auto-detected) |
-| 2 | **Install Terminal** | Windows Terminal or Homebrew instructions |
-| 3 | **Generate SSH Key** | Create ed25519 key for VPS access |
-| 4 | **Rent a VPS** | Links to OVH and Contabo with pricing |
-| 5 | **Create VPS Instance** | Checklist for VPS setup with SSH key |
-| 6 | **SSH Connect** | First connection with troubleshooting tips |
-| 7 | **Run Installer** | The `curl \| bash` one-liner |
-| 8 | **Reconnect as Ubuntu** | Post-install reconnection |
-| 9 | **Status Check** | Run `acfs doctor` to verify |
-| 10 | **Launch Onboarding** | Start the interactive tutorial |
+| 1 | **Choose Your OS** | Select Mac, Windows, or Linux (auto-detected) |
+| 2 | **Install Terminal** | Get a proper terminal application set up |
+| 3 | **Generate SSH Key** | Create an ed25519 key for VPS access |
+| 4 | **Rent a VPS** | Choose a VPS provider and plan |
+| 5 | **Create VPS Instance** | Launch your VPS and confirm SSH access |
+| 6 | **SSH Into Your VPS** | First connection with troubleshooting tips |
+| 7 | **Set Up Accounts** | Create accounts for the services you'll use |
+| 8 | **Pre-Flight Check** | Verify your VPS is ready before installing |
+| 9 | **Run Installer** | The `curl \| bash` one-liner |
+| 10 | **Reconnect as Ubuntu** | Post-install reconnection |
+| 11 | **Verify Key Connection** | Reconnect using your SSH key and confirm it works |
+| 12 | **Status Check** | Run `acfs doctor` to verify |
+| 13 | **Launch Onboarding** | Start the interactive tutorial |
 
 ### Key Features
 
@@ -958,7 +961,7 @@ Next.js 16 (App Router)
 
 **No backend required.** All state is stored in:
 - URL query parameters
-- localStorage (`acfs-user-os`, `acfs-vps-ip`, `acfs-wizard-completed-steps`)
+- localStorage (`agent-flywheel-user-os`, `agent-flywheel-vps-ip`, `agent-flywheel-wizard-completed-steps`)
 
 ---
 
@@ -1249,7 +1252,7 @@ ACFS works on any Ubuntu VPS with SSH key login. Here are recommended providers 
 
 ### Other Providers
 
-Any provider with Ubuntu VPS and SSH key login works. The wizard at [acfs.ai](https://acfs.ai) has step-by-step guides.
+Any provider with Ubuntu VPS and SSH key login works. The wizard at [agent-flywheel.com](https://agent-flywheel.com) has step-by-step guides.
 
 ---
 
