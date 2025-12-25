@@ -1,7 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
-const GA_API_SECRET = process.env.GA_API_SECRET;
+const GA_MEASUREMENT_ID_RAW = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+const GA_API_SECRET_RAW = process.env.GA_API_SECRET;
+
+function isValidGaMeasurementId(value: unknown): value is string {
+  // GA4 measurement IDs look like: G-XXXXXXXXXX (letters/numbers)
+  return typeof value === 'string' && /^G-[A-Z0-9]+$/.test(value);
+}
+
+function isValidGaApiSecret(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0 && value.length <= 200;
+}
+
+const GA_MEASUREMENT_ID = isValidGaMeasurementId(GA_MEASUREMENT_ID_RAW)
+  ? GA_MEASUREMENT_ID_RAW
+  : undefined;
+const GA_API_SECRET = isValidGaApiSecret(GA_API_SECRET_RAW) ? GA_API_SECRET_RAW : undefined;
 
 // Rate limiting configuration
 const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
@@ -345,8 +359,12 @@ export async function POST(request: NextRequest) {
 
     let response: Response;
     try {
+      const endpoint = new URL('https://www.google-analytics.com/mp/collect');
+      endpoint.searchParams.set('measurement_id', GA_MEASUREMENT_ID);
+      endpoint.searchParams.set('api_secret', GA_API_SECRET);
+
       response = await fetch(
-        `https://www.google-analytics.com/mp/collect?measurement_id=${GA_MEASUREMENT_ID}&api_secret=${GA_API_SECRET}`,
+        endpoint.toString(),
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, type ReactNode } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import {
@@ -16,7 +16,7 @@ import {
 import { safeGetItem, safeSetItem } from '@/lib/utils';
 
 interface AnalyticsProviderProps {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 /**
@@ -26,13 +26,14 @@ interface AnalyticsProviderProps {
 export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const gaId = GA_MEASUREMENT_ID;
   const scrollDepthsReached = useRef<Set<number>>(new Set());
   const pageStartTime = useRef<number>(0);
   const timeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Track page views on route change
   useEffect(() => {
-    if (!GA_MEASUREMENT_ID) return;
+    if (!gaId) return;
 
     const url = pathname + (searchParams?.toString() ? `?${searchParams.toString()}` : '');
 
@@ -41,7 +42,7 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
     pageStartTime.current = Date.now();
 
     // Track pageview
-    window.gtag?.('config', GA_MEASUREMENT_ID, {
+    window.gtag?.('config', gaId, {
       page_path: url,
       page_title: document.title,
     });
@@ -56,11 +57,11 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
     return () => {
       window.removeEventListener('load', trackPagePerformance);
     };
-  }, [pathname, searchParams]);
+  }, [pathname, searchParams, gaId]);
 
   // Initialize session tracking on mount
   useEffect(() => {
-    if (!GA_MEASUREMENT_ID) return;
+    if (!gaId) return;
 
     // Get or create user ID
     const userId = getOrCreateUserId();
@@ -87,11 +88,11 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
       visit_count: visitCount,
       is_returning_user: visitCount > 1,
     });
-  }, []);
+  }, [gaId]);
 
   // Scroll depth tracking
   const handleScroll = useCallback(() => {
-    if (!GA_MEASUREMENT_ID) return;
+    if (!gaId) return;
 
     const scrollTop = window.scrollY;
     const docHeight = document.documentElement.scrollHeight - window.innerHeight;
@@ -105,19 +106,19 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
         trackScrollDepth(milestone, pathname);
       }
     }
-  }, [pathname]);
+  }, [pathname, gaId]);
 
   // Set up scroll tracking
   useEffect(() => {
-    if (!GA_MEASUREMENT_ID) return;
+    if (!gaId) return;
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [handleScroll]);
+  }, [handleScroll, gaId]);
 
   // Time on page tracking
   useEffect(() => {
-    if (!GA_MEASUREMENT_ID) return;
+    if (!gaId) return;
 
     const timeCheckpoints = [30, 60, 120, 300, 600]; // seconds
     let lastCheckpoint = 0;
@@ -138,11 +139,11 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
         clearInterval(timeIntervalRef.current);
       }
     };
-  }, [pathname]);
+  }, [pathname, gaId]);
 
   // Track visibility changes (tab switching)
   useEffect(() => {
-    if (!GA_MEASUREMENT_ID) return;
+    if (!gaId) return;
 
     const handleVisibilityChange = () => {
       if (document.hidden) {
@@ -160,11 +161,11 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [pathname]);
+  }, [pathname, gaId]);
 
   // Track page exit
   useEffect(() => {
-    if (!GA_MEASUREMENT_ID) return;
+    if (!gaId) return;
 
     const handleBeforeUnload = () => {
       const timeSpent = Math.floor((Date.now() - pageStartTime.current) / 1000);
@@ -181,25 +182,27 @@ export function AnalyticsProvider({ children }: AnalyticsProviderProps) {
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [pathname]);
+  }, [pathname, gaId]);
 
-  if (!GA_MEASUREMENT_ID) {
+  if (!gaId) {
     return <>{children}</>;
   }
+
+  const gaExternalScriptProps = {
+    src: `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(gaId)}`,
+    strategy: 'afterInteractive' as const,
+  };
 
   return (
     <>
       {/* Google Analytics Script */}
-      <Script
-        src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
-        strategy="afterInteractive"
-      />
+      <Script {...gaExternalScriptProps} />
       <Script id="google-analytics" strategy="afterInteractive">
         {`
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());
-          gtag('config', '${GA_MEASUREMENT_ID}', {
+          gtag('config', ${JSON.stringify(gaId)}, {
             page_path: window.location.pathname,
             cookie_flags: 'SameSite=None;Secure',
             send_page_view: true,
