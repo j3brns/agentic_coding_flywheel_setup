@@ -266,7 +266,7 @@ state_write_atomic() {
     # when source and target are on the same filesystem
     if ! mv -f "$temp_file" "$file_path" 2>/dev/null; then
         local mv_err=$?
-        rm -f "$temp_file" 2>/dev/null
+        rm -f "$temp_file" 2>/dev/null || true
 
         # Check for permission issues
         if [[ ! -w "$target_dir" ]] || [[ -f "$file_path" && ! -w "$file_path" ]]; then
