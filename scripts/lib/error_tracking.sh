@@ -184,6 +184,11 @@ try_step() {
     # Log error if logging available
     if type -t log_error &>/dev/null; then
         log_error "$description failed (exit $exit_code)"
+        # Print captured output to help debug failures
+        if [[ -n "$LAST_ERROR_OUTPUT" ]]; then
+            echo "  Error output:" >&2
+            echo "$LAST_ERROR_OUTPUT" | head -50 | sed 's/^/    /' >&2
+        fi
     fi
 
     return "$exit_code"
