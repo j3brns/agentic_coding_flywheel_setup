@@ -36,49 +36,49 @@ export function ThirdPartyScripts() {
 
   // Track virtual pageviews for GTM on SPA navigation
   useEffect(() => {
-    if (GTM_ID && window.dataLayer) {
-      window.dataLayer.push({
-        event: 'virtual_pageview',
-        page_path: pathname,
-        page_title: document.title,
-      });
-    }
+    if (!GTM_ID) return;
+
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      event: 'virtual_pageview',
+      page_path: pathname,
+      page_title: document.title,
+    });
   }, [pathname]);
 
   return (
     <>
       {/* Google Tag Manager - for advanced tag management */}
       {GTM_ID && (
-        <Script
-          id="gtm-script"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-              new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-              j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-              'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-              })(window,document,'script','dataLayer',${JSON.stringify(GTM_ID)});
-            `,
-          }}
-        />
+        <>
+          <Script id="gtm-init" strategy="afterInteractive">
+            {`
+              window.dataLayer = window.dataLayer || [];
+              window.dataLayer.push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+            `}
+          </Script>
+          <Script
+            id="gtm-loader"
+            strategy="afterInteractive"
+            src={`https://www.googletagmanager.com/gtm.js?id=${encodeURIComponent(GTM_ID)}`}
+          />
+        </>
       )}
 
       {/* Microsoft Clarity - Free heatmaps & session recording (invisible) */}
       {CLARITY_PROJECT_ID && (
-        <Script
-          id="clarity-script"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function(c,l,a,r,i,t,y){
-                c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
-                t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
-                y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
-              })(window, document, "clarity", "script", ${JSON.stringify(CLARITY_PROJECT_ID)});
-            `,
-          }}
-        />
+        <>
+          <Script id="clarity-init" strategy="afterInteractive">
+            {`
+              window.clarity = window.clarity || function(){(window.clarity.q = window.clarity.q || []).push(arguments);};
+            `}
+          </Script>
+          <Script
+            id="clarity-loader"
+            strategy="afterInteractive"
+            src={`https://www.clarity.ms/tag/${encodeURIComponent(CLARITY_PROJECT_ID)}`}
+          />
+        </>
       )}
 
       {/* Vercel Web Analytics - automatic pageview & event tracking (requires Vercel project config) */}
