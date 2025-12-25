@@ -23,6 +23,7 @@ import {
   Laptop,
   Cloud,
   Moon,
+  BookOpen,
 } from "lucide-react";
 import { motion, AnimatePresence } from "@/components/motion";
 import { Button } from "@/components/ui/button";
@@ -266,7 +267,10 @@ const FEATURES = [
     description: (
       <>
         Run &apos;onboard&apos; after setup for guided lessons from <Jargon term="linux">Linux</Jargon> basics to full{" "}
-        <Jargon term="agentic">agentic</Jargon> workflows.
+        <Jargon term="agentic">agentic</Jargon> workflows.{" "}
+        <Link href="/learn/welcome" className="inline-flex items-center gap-1 text-primary hover:underline">
+          Preview lessons <BookOpen className="h-3 w-3" />
+        </Link>
       </>
     ),
     gradient: "bg-[oklch(0.75_0.18_195)]",
@@ -913,6 +917,12 @@ export default function HomePage() {
           >
             GitHub
           </a>
+          <Link
+            href="/learn"
+            className="hidden text-sm text-muted-foreground transition-colors hover:text-foreground sm:block"
+          >
+            Learn
+          </Link>
           <Button asChild size="sm" variant="outline" className="border-primary/30 hover:bg-primary/10">
             <Link href="/wizard/os-selection">
               Get Started
@@ -1079,6 +1089,12 @@ export default function HomePage() {
                 >
                   GitHub
                 </a>
+                <Link
+                  href="/learn"
+                  className="transition-colors hover:text-foreground"
+                >
+                  Learning Hub
+                </Link>
                 <a
                   href="https://github.com/Dicklesworthstone/ntm"
                   target="_blank"
