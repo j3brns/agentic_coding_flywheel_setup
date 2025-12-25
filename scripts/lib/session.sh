@@ -384,13 +384,17 @@ JQ_EOF
     jq_filter="${jq_filter/##OPTIONAL##/$optional_filters}"
 
     if ! jq "$jq_filter" "$file" > "$tmpfile"; then
-        rm -f "$tmpfile"
+        rm -f "$tmpfile" 2>/dev/null || true
         log_error "Failed to sanitize session export"
         return 1
     fi
 
     # Atomic replace
-    mv "$tmpfile" "$file"
+    if ! mv "$tmpfile" "$file"; then
+        rm -f "$tmpfile" 2>/dev/null || true
+        log_error "Failed to write sanitized session export"
+        return 1
+    fi
     return 0
 }
 
@@ -618,10 +622,10 @@ export_session() {
             exported=$(cat "$tmpfile")
         else
             log_error "Sanitization failed; refusing to output unsanitized export"
-            rm -f "$tmpfile"
+            rm -f "$tmpfile" 2>/dev/null || true
             return 1
         fi
-        rm -f "$tmpfile"
+        rm -f "$tmpfile" 2>/dev/null || true
     elif [[ "$sanitize" == "true" && "$format" != "json" ]]; then
         # For non-JSON formats, apply text sanitization
         if ! exported=$(sanitize_content "$exported"); then

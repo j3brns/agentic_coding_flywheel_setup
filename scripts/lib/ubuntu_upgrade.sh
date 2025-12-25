@@ -172,8 +172,11 @@ ubuntu_restore_lts_only() {
     local backup="${config}.disabled"
 
     if [[ -f "$backup" ]]; then
-        mv "$backup" "$config"
-        log_detail "Restored LTS-only release setting"
+        if mv "$backup" "$config" 2>/dev/null; then
+            log_detail "Restored LTS-only release setting"
+        else
+            log_warn "Failed to restore LTS-only release setting (left backup at $backup)"
+        fi
     fi
 
     return 0
@@ -526,8 +529,11 @@ ubuntu_cleanup_deb822_workaround() {
 
     # Remove our temporary legacy file
     if [[ -f "$legacy_file" ]]; then
-        rm -f "$legacy_file"
-        log_detail "Removed temporary legacy sources file"
+        if rm -f "$legacy_file" 2>/dev/null; then
+            log_detail "Removed temporary legacy sources file"
+        else
+            log_warn "Failed to remove temporary legacy sources file: $legacy_file"
+        fi
     fi
 
     # If do-release-upgrade succeeded, it typically writes a fresh ubuntu.sources.
@@ -541,9 +547,12 @@ ubuntu_cleanup_deb822_workaround() {
     fi
 
     if [[ -f "$disabled_file" ]]; then
-        mv "$disabled_file" "$sources_file" 2>/dev/null || true
-        apt-get update -qq 2>/dev/null || true
-        log_warn "Restored ubuntu.sources from backup (upgrade may have failed before writing new sources)"
+        if mv "$disabled_file" "$sources_file" 2>/dev/null; then
+            apt-get update -qq 2>/dev/null || true
+            log_warn "Restored ubuntu.sources from backup (upgrade may have failed before writing new sources)"
+        else
+            log_warn "Failed to restore ubuntu.sources from backup at $disabled_file"
+        fi
         return 0
     fi
 
@@ -696,10 +705,12 @@ ubuntu_cleanup_resume() {
 
     # Disable and remove the service
     systemctl disable "${service_name}.service" 2>/dev/null || true
-    rm -f "/etc/systemd/system/${service_name}.service"
-    systemctl daemon-reload
+    if ! rm -f "/etc/systemd/system/${service_name}.service" 2>/dev/null; then
+        log_warn "Failed to remove resume service unit file: /etc/systemd/system/${service_name}.service"
+    fi
+    systemctl daemon-reload 2>/dev/null || true
 
-    log_success "Resume service removed"
+    log_success "Resume service cleanup complete"
     return 0
 }
 
