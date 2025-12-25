@@ -23,7 +23,6 @@ if [[ -n "$TERM" ]] && ! infocmp "$TERM" &>/dev/null; then
 fi
 
 # --- Paths (early) ---
-export PATH="$HOME/.local/bin:$PATH"
 export PATH="$HOME/.cargo/bin:$PATH"
 
 # Go (support both apt-style and /usr/local/go)
@@ -37,6 +36,9 @@ export BUN_INSTALL="$HOME/.bun"
 
 # Atuin (installer default)
 [[ -d "$HOME/.atuin/bin" ]] && export PATH="$HOME/.atuin/bin:$PATH"
+
+# Ensure user-local binaries take precedence (e.g., native Claude install).
+export PATH="$HOME/.local/bin:$PATH"
 
 # --- Oh My Zsh ---
 export ZSH="$HOME/.oh-my-zsh"

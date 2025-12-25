@@ -2782,6 +2782,106 @@ install_cloud_db_legacy_tools() {
     fi
 }
 
+install_supabase_cli_release() {
+    local arch=""
+    case "$(uname -m)" in
+        x86_64) arch="amd64" ;;
+        aarch64|arm64) arch="arm64" ;;
+        *)
+            log_error "Supabase CLI: unsupported architecture ($(uname -m))"
+            return 1
+            ;;
+    esac
+
+    local release_url=""
+    release_url="$(acfs_curl -o /dev/null -w '%{url_effective}\n' "https://github.com/supabase/cli/releases/latest" 2>/dev/null | tail -n1)" || true
+    local tag="${release_url##*/}"
+    if [[ -z "$tag" ]] || [[ "$tag" != v* ]]; then
+        log_error "Supabase CLI: failed to resolve latest release tag"
+        return 1
+    fi
+
+    local version="${tag#v}"
+    local base_url="https://github.com/supabase/cli/releases/download/${tag}"
+    local tarball="supabase_linux_${arch}.tar.gz"
+    local checksums="supabase_${version}_checksums.txt"
+
+    local tmp_dir=""
+    local tmp_tgz=""
+    local tmp_checksums=""
+    if command -v mktemp &>/dev/null; then
+        tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/acfs-supabase.XXXXXX" 2>/dev/null)" || tmp_dir=""
+        tmp_tgz="$(mktemp "${TMPDIR:-/tmp}/acfs-supabase.tgz.XXXXXX" 2>/dev/null)" || tmp_tgz=""
+        tmp_checksums="$(mktemp "${TMPDIR:-/tmp}/acfs-supabase.sha.XXXXXX" 2>/dev/null)" || tmp_checksums=""
+    fi
+
+    if [[ -z "$tmp_dir" ]] || [[ -z "$tmp_tgz" ]] || [[ -z "$tmp_checksums" ]]; then
+        log_error "Supabase CLI: failed to create temp files"
+        return 1
+    fi
+
+    if ! acfs_curl -o "$tmp_tgz" "${base_url}/${tarball}" 2>/dev/null; then
+        log_error "Supabase CLI: failed to download ${tarball}"
+        return 1
+    fi
+    if ! acfs_curl -o "$tmp_checksums" "${base_url}/${checksums}" 2>/dev/null; then
+        log_error "Supabase CLI: failed to download checksums"
+        return 1
+    fi
+
+    local expected_sha=""
+    expected_sha="$(grep -E " ${tarball}\$" "$tmp_checksums" 2>/dev/null | awk '{print $1}' | head -n1)" || true
+    if [[ -z "$expected_sha" ]]; then
+        log_error "Supabase CLI: checksum entry not found for ${tarball}"
+        return 1
+    fi
+
+    local actual_sha=""
+    actual_sha="$(calculate_sha256 < "$tmp_tgz" 2>/dev/null)" || actual_sha=""
+    if [[ -z "$actual_sha" ]] || [[ "$actual_sha" != "$expected_sha" ]]; then
+        log_error "Supabase CLI: checksum mismatch"
+        log_error "  Expected: $expected_sha"
+        log_error "  Actual:   ${actual_sha:-<missing>}"
+        return 1
+    fi
+
+    # Extract only the binary if possible (keeps tmp dir clean).
+    if ! tar -xzf "$tmp_tgz" -C "$tmp_dir" supabase 2>/dev/null; then
+        tar -xzf "$tmp_tgz" -C "$tmp_dir" 2>/dev/null || {
+            log_error "Supabase CLI: failed to extract tarball"
+            return 1
+        }
+    fi
+
+    local extracted_bin="$tmp_dir/supabase"
+    if [[ ! -f "$extracted_bin" ]]; then
+        extracted_bin="$(find "$tmp_dir" -maxdepth 2 -type f -name supabase -print -quit 2>/dev/null || true)"
+    fi
+    if [[ -z "$extracted_bin" ]] || [[ ! -f "$extracted_bin" ]]; then
+        log_error "Supabase CLI: binary not found after extract"
+        return 1
+    fi
+
+    chmod 755 "$tmp_dir" 2>/dev/null || true
+    chmod 755 "$extracted_bin" 2>/dev/null || true
+
+    run_as_target mkdir -p "$TARGET_HOME/.local/bin" 2>/dev/null || true
+    if ! run_as_target install -m 0755 "$extracted_bin" "$TARGET_HOME/.local/bin/supabase"; then
+        log_error "Supabase CLI: failed to install into ~/.local/bin"
+        return 1
+    fi
+    if ! run_as_target "$TARGET_HOME/.local/bin/supabase" --version >/dev/null 2>&1; then
+        log_error "Supabase CLI: installed but failed to run"
+        return 1
+    fi
+
+    # Best-effort cleanup
+    rm -f "$tmp_tgz" "$tmp_checksums" "$extracted_bin" 2>/dev/null || true
+    rmdir "$tmp_dir" 2>/dev/null || true
+
+    return 0
+}
+
 install_cloud_db_legacy_cloud() {
     # Cloud CLIs (bun global installs)
     if [[ "$SKIP_CLOUD" == "true" ]]; then
@@ -2793,19 +2893,24 @@ install_cloud_db_legacy_cloud() {
         else
             local cli
             for cli in wrangler supabase vercel; do
-                if [[ -x "$TARGET_HOME/.bun/bin/$cli" ]]; then
-                    log_detail "$cli already installed"
+                if [[ "$cli" == "supabase" ]]; then
+                    if [[ -x "$TARGET_HOME/.local/bin/supabase" ]] || [[ -x "$TARGET_HOME/.bun/bin/supabase" ]]; then
+                        log_detail "supabase already installed"
+                        continue
+                    fi
+
+                    log_detail "Installing supabase (direct binary)"
+                    if try_step "Installing supabase" install_supabase_cli_release; then
+                        log_success "supabase installed"
+                    else
+                        log_warn "supabase installation failed (optional)"
+                    fi
                     continue
                 fi
 
-                # Supabase CLI's postinstall runs `node scripts/postinstall.js`.
-                # In bun-only environments (and CI containers), `node` may not exist.
-                # Provide a bun-backed node shim so the postinstall can run and install the binary.
-                if [[ "$cli" == "supabase" ]]; then
-                    if ! run_as_target sh -c 'command -v node >/dev/null 2>&1'; then
-                        run_as_target mkdir -p "$TARGET_HOME/.local/bin" 2>/dev/null || true
-                        try_step "Creating node shim for Supabase CLI" run_as_target ln -sf "$bun_bin" "$TARGET_HOME/.local/bin/node" || true
-                    fi
+                if [[ -x "$TARGET_HOME/.bun/bin/$cli" ]]; then
+                    log_detail "$cli already installed"
+                    continue
                 fi
 
                 log_detail "Installing $cli via bun"
@@ -3327,9 +3432,9 @@ run_smoke_test() {
         ((warnings += 1))
     else
         local missing_cloud=()
-        [[ -x "$TARGET_HOME/.bun/bin/wrangler" ]] || missing_cloud+=("wrangler")
-        [[ -x "$TARGET_HOME/.bun/bin/supabase" ]] || missing_cloud+=("supabase")
-        [[ -x "$TARGET_HOME/.bun/bin/vercel" ]] || missing_cloud+=("vercel")
+        binary_installed "wrangler" || missing_cloud+=("wrangler")
+        binary_installed "supabase" || missing_cloud+=("supabase")
+        binary_installed "vercel" || missing_cloud+=("vercel")
 
         if [[ ${#missing_cloud[@]} -eq 0 ]]; then
             echo "✅ Cloud CLIs: wrangler, supabase, vercel" >&2
