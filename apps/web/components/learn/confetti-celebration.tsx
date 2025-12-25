@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
 import confetti from "canvas-confetti";
 import { PartyPopper, Sparkles, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
 
 // Encouraging messages for lesson completion
 const COMPLETION_MESSAGES = [
@@ -22,30 +23,6 @@ const FINAL_MESSAGES = [
   "Amazing! You've mastered the fundamentals!",
 ] as const;
 
-/**
- * Hook to check if user prefers reduced motion
- */
-function usePrefersReducedMotion(): boolean {
-  // Initialize with SSR-safe default, then sync with actual value
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  });
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-
-    // Subscribe to changes
-    const handler = (event: MediaQueryListEvent) => {
-      setPrefersReducedMotion(event.matches);
-    };
-
-    mediaQuery.addEventListener("change", handler);
-    return () => mediaQuery.removeEventListener("change", handler);
-  }, []);
-
-  return prefersReducedMotion;
-}
 
 /**
  * Fire a confetti burst from the center of the screen
@@ -130,7 +107,7 @@ function fireFinalConfetti() {
  * Hook to trigger confetti celebration
  */
 export function useConfetti() {
-  const prefersReducedMotion = usePrefersReducedMotion();
+  const prefersReducedMotion = useReducedMotion();
 
   const celebrate = useCallback(
     (isFinalLesson = false) => {
@@ -173,7 +150,7 @@ export function FinalCelebrationModal({
   onClose,
   onGoToDashboard,
 }: FinalCelebrationModalProps) {
-  const prefersReducedMotion = usePrefersReducedMotion();
+  const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
     if (isOpen) {
@@ -250,7 +227,7 @@ interface CompletionToastProps {
  * Brief toast notification for lesson completion
  */
 export function CompletionToast({ message, isVisible }: CompletionToastProps) {
-  const prefersReducedMotion = usePrefersReducedMotion();
+  const prefersReducedMotion = useReducedMotion();
 
   if (!isVisible) return null;
 

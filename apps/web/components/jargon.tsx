@@ -138,12 +138,21 @@ export function Jargon({ term, children, className, gradientHeading }: JargonPro
     setIsOpen(true);
   }, [isMobile]);
 
-  const handleBlur = useCallback(() => {
+  const handleBlur = useCallback((e: React.FocusEvent) => {
     if (isMobile) return;
     if (closeTimeoutRef.current) {
       clearTimeout(closeTimeoutRef.current);
     }
-    setIsOpen(false);
+    // Check if focus is moving to an element inside the tooltip
+    // If so, don't close immediately - let the user interact with tooltip links
+    const relatedTarget = e.relatedTarget as Node | null;
+    if (relatedTarget && tooltipRef.current?.contains(relatedTarget)) {
+      return;
+    }
+    // Use a small delay to allow focus to settle (same as mouse leave)
+    closeTimeoutRef.current = setTimeout(() => {
+      setIsOpen(false);
+    }, 150);
   }, [isMobile]);
 
   const handleClick = useCallback(() => {
@@ -241,6 +250,19 @@ export function Jargon({ term, children, className, gradientHeading }: JargonPro
               style={tooltipLayout.style}
               onMouseEnter={handleMouseEnter}
               onMouseLeave={handleMouseLeave}
+              onBlur={(e: React.FocusEvent) => {
+                // Close tooltip when focus leaves it entirely (not moving to trigger)
+                const relatedTarget = e.relatedTarget as Node | null;
+                if (relatedTarget && triggerRef.current?.contains(relatedTarget)) {
+                  return;
+                }
+                if (relatedTarget && tooltipRef.current?.contains(relatedTarget)) {
+                  return;
+                }
+                closeTimeoutRef.current = setTimeout(() => {
+                  setIsOpen(false);
+                }, 150);
+              }}
             >
               <TooltipContent term={jargonData} termKey={termKey} />
             </motion.div>
