@@ -637,7 +637,7 @@ function RiskTierCard() {
           <div className="flex items-center justify-between mb-2">
             <span className="font-bold text-white text-sm">{tier.name}</span>
             <span className="text-xs px-2 py-1 rounded bg-black/30 text-white/70">
-              {tier.approvals} approval{tier.approvals !== "1" && tier.approvals !== "Skip" ? "s" : ""}
+              {tier.approvals}{/^\d/.test(tier.approvals) ? (tier.approvals === "1" ? " approval" : " approvals") : ""}
             </span>
           </div>
           <p className="text-xs text-white/60">{tier.examples}</p>

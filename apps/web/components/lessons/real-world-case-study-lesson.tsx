@@ -1,5 +1,6 @@
 "use client";
 
+import { type ReactNode } from "react";
 import { motion } from "@/components/motion";
 import {
   Rocket,
@@ -560,7 +561,7 @@ function PhaseCard({
   phase: number;
   title: string;
   description: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <motion.div
