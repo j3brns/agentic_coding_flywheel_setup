@@ -2612,6 +2612,35 @@ install_agents_phase() {
     if acfs_use_generated_category "agents"; then
         log_detail "Using generated installers for agents (phase 7)"
         acfs_run_generated_category_phase "agents" "7" || return 1
+
+        # CI/doctor expectations: ensure `claude` resolves to ~/.local/bin/claude.
+        # The native installer can choose non-standard paths, and bun installs land in ~/.bun/bin.
+        local claude_bin_local="$TARGET_HOME/.local/bin/claude"
+        if [[ ! -x "$claude_bin_local" ]]; then
+            run_as_target mkdir -p "$TARGET_HOME/.local/bin" 2>/dev/null || true
+
+            local claude_candidate=""
+            local candidates=(
+                "$TARGET_HOME/.claude/bin/claude"
+                "$TARGET_HOME/.claude/local/bin/claude"
+                "$TARGET_HOME/.bun/bin/claude"
+            )
+            for claude_candidate in "${candidates[@]}"; do
+                if [[ -x "$claude_candidate" ]]; then
+                    break
+                fi
+                claude_candidate=""
+            done
+
+            if [[ -z "$claude_candidate" ]] && [[ -d "$TARGET_HOME/.claude" ]]; then
+                claude_candidate="$(run_as_target find "$TARGET_HOME/.claude" -maxdepth 4 -type f -name claude -perm -111 -print -quit 2>/dev/null || true)"
+            fi
+
+            if [[ -n "$claude_candidate" ]] && [[ -x "$claude_candidate" ]]; then
+                try_step "Linking Claude Code into ~/.local/bin" run_as_target ln -sf "$claude_candidate" "$claude_bin_local" || true
+            fi
+        fi
+
         log_success "Coding agents installed"
         return 0
     fi
