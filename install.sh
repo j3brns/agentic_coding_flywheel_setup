@@ -1839,7 +1839,7 @@ run_ubuntu_upgrade_phase() {
             log_success "Pre-upgrade reboot complete. Continuing with upgrade..."
             # Clear the stage so we proceed normally
             if type -t state_update &>/dev/null; then
-                state_update ".ubuntu_upgrade.current_stage = \"not_started\" | .ubuntu_upgrade.enabled = false"
+                state_update ".ubuntu_upgrade.current_stage = \"not_started\" | .ubuntu_upgrade.enabled = false" || true
             fi
             # Set flag to skip redundant warning (user already confirmed before reboot)
             local skip_upgrade_warning=true
@@ -1939,7 +1939,15 @@ run_ubuntu_upgrade_phase() {
 
             # Set stage so we know to continue after reboot
             if type -t state_update &>/dev/null; then
-                state_update ".ubuntu_upgrade.enabled = true | .ubuntu_upgrade.current_stage = \"pre_upgrade_reboot\" | .ubuntu_upgrade.original_version = \"$current_version_str\" | .ubuntu_upgrade.target_version = \"$TARGET_UBUNTU_VERSION\""
+                if ! state_update ".ubuntu_upgrade.enabled = true | .ubuntu_upgrade.current_stage = \"pre_upgrade_reboot\" | .ubuntu_upgrade.original_version = \"$current_version_str\" | .ubuntu_upgrade.target_version = \"$TARGET_UBUNTU_VERSION\""; then
+                    log_error "Failed to record upgrade stage; cannot safely auto-reboot."
+                    log_info "Please reboot manually and re-run the installer."
+                    return 1
+                fi
+            else
+                log_error "State tracking is unavailable; cannot safely auto-reboot."
+                log_info "Please reboot manually and re-run the installer."
+                return 1
             fi
 
             # Set up resume infrastructure

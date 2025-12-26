@@ -232,7 +232,7 @@ flowchart TB
 ┌───────────────────────────────────────────────────────────────────────────┐
 │                            INSTALLER                                       │
 │  install.sh + scripts/lib/*.sh + checksums.yaml (SHA256 verification)     │
-│  (scripts/generated/* are not invoked by install.sh yet)                   │
+│  (scripts/generated/* are sourced; execution is feature-flagged)            │
 └───────────────────────────────────────────────────────────────────────────┘
                     │
                     ▼
@@ -265,7 +265,7 @@ flowchart TB
 | **Website** | `apps/web/` | Next.js 16 + Tailwind 4 | Step-by-step wizard for beginners |
 | **Installer** | `install.sh` | Bash | One-liner bootstrap script |
 | **Lib Scripts** | `scripts/lib/` | Bash | Modular installer functions |
-| **Generated Scripts** | `scripts/generated/` | Bash | Auto-generated category installers (not wired into `install.sh` yet) |
+| **Generated Scripts** | `scripts/generated/` | Bash | Auto-generated category installers (sourced by `install.sh`; execution is feature-flagged) |
 | **Configs** | `acfs/` | Shell/Tmux configs | Files deployed to `~/.acfs/` |
 | **Onboarding** | `acfs/onboard/` | Bash + Markdown | Interactive tutorial system |
 | **Checksums** | `checksums.yaml` | YAML | SHA256 hashes for upstream installers |
@@ -331,7 +331,7 @@ The TypeScript generator (`packages/manifest/src/generate.ts`) reads the manifes
    - Runs them in dependency order
    - Single entry point for running the generated installers
 
-> Note: The production one-liner installer (`install.sh`) does not invoke `scripts/generated/*` yet.
+> Note: The production one-liner installer (`install.sh`) defaults to the legacy implementations; generated installers are sourced and can be enabled per-category via feature flags during migration.
 
 To regenerate after manifest changes:
 

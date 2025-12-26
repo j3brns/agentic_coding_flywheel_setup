@@ -45,6 +45,9 @@ LAST_ERROR_TIME="${LAST_ERROR_TIME:-}"
 
 # Maximum length of error output to store (prevents huge logs)
 ERROR_OUTPUT_MAX_LENGTH="${ERROR_OUTPUT_MAX_LENGTH:-2000}"
+if [[ ! "$ERROR_OUTPUT_MAX_LENGTH" =~ ^[0-9]+$ ]] || [[ "$ERROR_OUTPUT_MAX_LENGTH" -lt 1 ]]; then
+    ERROR_OUTPUT_MAX_LENGTH=2000
+fi
 
 # Enable/disable verbose error output
 ERROR_VERBOSE="${ERROR_VERBOSE:-false}"
@@ -178,16 +181,21 @@ try_step() {
     LAST_ERROR_CODE=$exit_code
     LAST_ERROR_TIME=$(date -Iseconds)
 
-    # Capture and truncate output
+    # Capture and truncate output without slurping arbitrarily large logs into RAM.
     if [[ -n "$output_file" && -f "$output_file" ]]; then
-        local full_output
-        full_output=$(cat "$output_file" 2>/dev/null || echo "")
+        local max_len
+        max_len="${ERROR_OUTPUT_MAX_LENGTH}"
+        if [[ ! "$max_len" =~ ^[0-9]+$ ]] || [[ "$max_len" -lt 1 ]]; then
+            max_len=2000
+        fi
+        local captured
+        captured="$(head -c "$((max_len + 1))" "$output_file" 2>/dev/null || echo "")"
 
-        # Truncate if too long
-        if [[ ${#full_output} -gt $ERROR_OUTPUT_MAX_LENGTH ]]; then
-            LAST_ERROR_OUTPUT="${full_output:0:$ERROR_OUTPUT_MAX_LENGTH}... [truncated]"
+        if [[ ${#captured} -gt $max_len ]]; then
+            captured="${captured:0:$max_len}"
+            LAST_ERROR_OUTPUT="${captured}... [truncated]"
         else
-            LAST_ERROR_OUTPUT="$full_output"
+            LAST_ERROR_OUTPUT="$captured"
         fi
     else
         LAST_ERROR_OUTPUT="(command output unavailable: mktemp failed)"

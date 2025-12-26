@@ -38,6 +38,7 @@ export TOTAL_STEPS_FAILED=0       # Count of failures
 # Configuration
 export TRY_STEP_VERBOSE="${TRY_STEP_VERBOSE:-0}"  # Set to 1 for debug output
 export MAX_ERROR_LENGTH=500       # Max chars to store in LAST_ERROR
+export MAX_ERROR_OUTPUT_LENGTH="${MAX_ERROR_OUTPUT_LENGTH:-2000}"  # Max chars to store in LAST_ERROR_OUTPUT
 
 # ============================================================
 # JSON Escaping Helper
@@ -222,10 +223,23 @@ _handle_step_failure() {
 
     ((TOTAL_STEPS_FAILED += 1))
 
-    # Capture full output (best-effort).
+    # Capture output (best-effort) without slurping arbitrarily large logs into RAM.
     LAST_ERROR_OUTPUT=""
     if [[ -n "$output_file" && -f "$output_file" ]]; then
-        LAST_ERROR_OUTPUT=$(cat "$output_file")
+        local max_len="${MAX_ERROR_OUTPUT_LENGTH}"
+        if [[ ! "$max_len" =~ ^[0-9]+$ ]] || [[ "$max_len" -lt 1 ]]; then
+            max_len=2000
+        fi
+
+        local captured=""
+        captured="$(head -c "$((max_len + 1))" "$output_file" 2>/dev/null || printf '')"
+
+        if [[ ${#captured} -gt $max_len ]]; then
+            captured="${captured:0:$max_len}"
+            LAST_ERROR_OUTPUT="${captured}... [truncated]"
+        else
+            LAST_ERROR_OUTPUT="$captured"
+        fi
     else
         LAST_ERROR_OUTPUT="(command output unavailable: mktemp failed)"
     fi
