@@ -3,11 +3,12 @@
 # ACFS State Management Library
 #
 # Provides phase-granular progress persistence with stable phase IDs.
-# Implements state.json v2 schema for robust resume capability.
+# Implements state.json v3 schema for robust resume capability.
 #
 # Schema Version History:
 #   v1: Used numeric phase array [1, 2, 3, ...] (legacy, install.sh inline)
-#   v2: Uses stable phase IDs ["user_setup", "filesystem", ...] (this module)
+#   v2: Uses stable phase IDs ["user_setup", "filesystem", ...]
+#   v3: Adds ubuntu_upgrade section for multi-reboot upgrade tracking
 #
 # Related beads:
 #   - agentic_coding_flywheel_setup-5zt: Design state.json v2 schema
@@ -740,7 +741,10 @@ state_handle_invalid() {
             # In non-interactive mode (YES_MODE), default to fresh start
             if [[ "${YES_MODE:-false}" == "true" ]]; then
                 echo "Non-interactive mode: starting fresh install"
-                state_backup_and_remove
+                if ! state_backup_and_remove; then
+                    echo "ERROR: Failed to move corrupted state file out of the way; aborting." >&2
+                    return 1
+                fi
                 return 0
             fi
 
@@ -756,7 +760,10 @@ state_handle_invalid() {
             if [[ "$response" =~ ^[Nn] ]]; then
                 return 1
             fi
-            state_backup_and_remove
+            if ! state_backup_and_remove; then
+                echo "ERROR: Failed to move corrupted state file out of the way; aborting." >&2
+                return 1
+            fi
             return 0
             ;;
         3)
@@ -770,7 +777,10 @@ state_handle_invalid() {
 
             if [[ "${YES_MODE:-false}" == "true" ]]; then
                 echo "Non-interactive mode: starting fresh install"
-                state_backup_and_remove
+                if ! state_backup_and_remove; then
+                    echo "ERROR: Failed to move invalid state file out of the way; aborting." >&2
+                    return 1
+                fi
                 return 0
             fi
 
@@ -786,7 +796,10 @@ state_handle_invalid() {
             if [[ "$response" =~ ^[Nn] ]]; then
                 return 1
             fi
-            state_backup_and_remove
+            if ! state_backup_and_remove; then
+                echo "ERROR: Failed to move invalid state file out of the way; aborting." >&2
+                return 1
+            fi
             return 0
             ;;
         4)
@@ -801,7 +814,10 @@ state_handle_invalid() {
 
             if [[ "${YES_MODE:-false}" == "true" ]]; then
                 echo "Non-interactive mode: starting fresh install"
-                state_backup_and_remove
+                if ! state_backup_and_remove; then
+                    echo "ERROR: Failed to move incompatible state file out of the way; aborting." >&2
+                    return 1
+                fi
                 return 0
             fi
 
@@ -817,7 +833,10 @@ state_handle_invalid() {
             if [[ "$response" =~ ^[Nn] ]]; then
                 return 1
             fi
-            state_backup_and_remove
+            if ! state_backup_and_remove; then
+                echo "ERROR: Failed to move incompatible state file out of the way; aborting." >&2
+                return 1
+            fi
             return 0
             ;;
         5)
@@ -849,13 +868,19 @@ state_handle_invalid() {
                     return 1
                 fi
                 if [[ "$response" =~ ^[Nn] ]]; then
-                    state_backup_and_remove
+                    if ! state_backup_and_remove; then
+                        echo "ERROR: Failed to move legacy state file out of the way; aborting." >&2
+                        return 1
+                    fi
                 else
                     state_migrate_v1_to_v2
                 fi
             else
                 echo "jq is required for migration. Starting fresh."
-                state_backup_and_remove
+                if ! state_backup_and_remove; then
+                    echo "ERROR: Failed to move legacy state file out of the way; aborting." >&2
+                    return 1
+                fi
             fi
             return 0
             ;;
@@ -874,13 +899,31 @@ state_backup_and_remove() {
     state_file="$(state_get_file)"
 
     if [[ -f "$state_file" ]]; then
+        local default_home="${ACFS_HOME:-$HOME/.acfs}"
+        local expected_user_state="${default_home}/state.json"
+        local expected_system_state="/var/lib/acfs/state.json"
+
+        case "$state_file" in
+            "$expected_user_state"|"$expected_system_state") ;;
+            *)
+                echo "Refusing to move unexpected state file path: $state_file" >&2
+                echo "Expected: $expected_user_state or $expected_system_state" >&2
+                return 1
+                ;;
+        esac
+
         local backup_file
         backup_file="${state_file}.backup.$(date +%Y%m%d_%H%M%S)"
-        cp "$state_file" "$backup_file" 2>/dev/null || true
-        echo "Backed up state to: $backup_file"
-        rm -f "$state_file"
-        echo "Removed corrupted state file"
+
+        if mv "$state_file" "$backup_file" 2>/dev/null; then
+            echo "Moved corrupted state file to: $backup_file"
+        else
+            echo "Failed to move state file to backup: $backup_file" >&2
+            return 1
+        fi
     fi
+
+    return 0
 }
 
 # Convenience function to validate and handle state
