@@ -2815,9 +2815,31 @@ install_agents_phase() {
     log_detail "Installing Codex CLI for $TARGET_USER"
     try_step "Installing Codex CLI" run_as_target "$bun_bin" install -g --trust @openai/codex@latest || true
 
+    # Create wrapper script that uses bun as runtime (avoids node PATH issues)
+    local codex_bin_local="$TARGET_HOME/.local/bin/codex"
+    if [[ -x "$TARGET_HOME/.bun/bin/codex" ]] && [[ ! -x "$codex_bin_local" ]]; then
+        run_as_target mkdir -p "$TARGET_HOME/.local/bin" 2>/dev/null || true
+        try_step "Creating Codex bun wrapper" run_as_target bash -c "cat > '$codex_bin_local' << 'WRAPPER'
+#!/bin/bash
+exec ~/.bun/bin/bun ~/.bun/bin/codex \"\$@\"
+WRAPPER
+chmod +x '$codex_bin_local'" || true
+    fi
+
     # Gemini CLI (install as target user)
     log_detail "Installing Gemini CLI for $TARGET_USER"
     try_step "Installing Gemini CLI" run_as_target "$bun_bin" install -g --trust @google/gemini-cli@latest || true
+
+    # Create wrapper script that uses bun as runtime (avoids node PATH issues)
+    local gemini_bin_local="$TARGET_HOME/.local/bin/gemini"
+    if [[ -x "$TARGET_HOME/.bun/bin/gemini" ]] && [[ ! -x "$gemini_bin_local" ]]; then
+        run_as_target mkdir -p "$TARGET_HOME/.local/bin" 2>/dev/null || true
+        try_step "Creating Gemini bun wrapper" run_as_target bash -c "cat > '$gemini_bin_local' << 'WRAPPER'
+#!/bin/bash
+exec ~/.bun/bin/bun ~/.bun/bin/gemini \"\$@\"
+WRAPPER
+chmod +x '$gemini_bin_local'" || true
+    fi
 
     log_success "Coding agents installed"
 }
