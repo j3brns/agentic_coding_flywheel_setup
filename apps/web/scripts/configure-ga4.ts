@@ -20,6 +20,7 @@ function getErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
   return String(error);
 }
+
 const PROPERTY_NAME = `properties/${PROPERTY_ID}`;
 
 // Initialize the client (uses ADC automatically)
