@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Automatic Ubuntu Upgrade**: The installer now automatically upgrades Ubuntu to 25.10 before running the main ACFS installation
   - Detects current Ubuntu version and calculates sequential upgrade path
   - Handles reboots automatically via systemd resume service
-  - Supports upgrade chains: 22.04 → 24.04 → 24.10 → 25.04 → 25.10
+  - Supports upgrade chains: 22.04 → 24.04 → 25.04 → 25.10 (EOL interim releases like 24.10 may be skipped)
   - Creates MOTD banners to show progress to reconnecting users
   - Includes preflight checks for disk space, network, and apt state
   - Provides graceful degradation if upgrade fails but system is functional

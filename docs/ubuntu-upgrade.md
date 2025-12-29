@@ -5,7 +5,7 @@ This document covers the internal architecture and debugging procedures for the 
 ## Overview
 
 ACFS automatically upgrades Ubuntu to version 25.10 before running the main installation. The upgrade system handles:
-- Multi-hop upgrades (e.g., 24.04 → 24.10 → 25.04 → 25.10)
+- Multi-hop upgrades (e.g., 24.04 → 25.04 → 25.10; EOL interim releases like 24.10 may be skipped)
 - Automatic reboots after each upgrade
 - Resume via systemd service
 - State persistence across reboots
@@ -93,8 +93,7 @@ ubuntu_version_gte 2404 2510  # Returns: 1 (false, 24.04 < 25.10)
 ```bash
 # Calculate upgrade path (returns newline-separated list)
 ubuntu_calculate_upgrade_path 2510
-# Output:
-# 24.10
+# Output (from Ubuntu 24.04):
 # 25.04
 # 25.10
 ```
@@ -106,13 +105,13 @@ ubuntu_calculate_upgrade_path 2510
 state_upgrade_set_stage "upgrading"
 
 # Record completed upgrade
-state_upgrade_complete_hop "24.10"
+state_upgrade_complete_hop "25.04"
 
 # Get current stage
 state_upgrade_get_stage  # Returns: upgrading, awaiting_reboot, etc.
 
 # Get next target version
-state_upgrade_get_next_target  # Returns: "25.04" or empty if done
+state_upgrade_get_next_target  # Returns: "25.10" or empty if done
 ```
 
 ## File Locations During Upgrade
