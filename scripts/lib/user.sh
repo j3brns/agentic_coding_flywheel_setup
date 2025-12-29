@@ -210,7 +210,7 @@ migrate_ssh_keys() {
     done < "$source_keys"
 
     # Fix permissions
-    $SUDO chown -R "$target:$target" "$ACFS_TARGET_HOME/.ssh"
+    $SUDO chown -hR "$target:$target" "$ACFS_TARGET_HOME/.ssh"
     $SUDO chmod 700 "$ACFS_TARGET_HOME/.ssh"
     $SUDO chmod 600 "$target_keys"
 

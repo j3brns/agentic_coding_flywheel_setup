@@ -1634,6 +1634,43 @@ ensure_root() {
     fi
 }
 
+acfs_chown_tree() {
+    local owner_group="$1"
+    local path="$2"
+
+    if [[ -z "$owner_group" ]]; then
+        log_error "acfs_chown_tree: owner/group is required"
+        return 1
+    fi
+    if [[ -z "$path" ]]; then
+        log_error "acfs_chown_tree: path is required"
+        return 1
+    fi
+    if [[ "$path" == "/" ]]; then
+        log_error "acfs_chown_tree: refusing to chown '/'"
+        return 1
+    fi
+
+    # SECURITY: Prevent recursive chown from dereferencing symlinks under the tree.
+    # For top-level symlinks (e.g., symlinked /data), resolve to the real path so
+    # ownership is applied to the intended directory.
+    local resolved="$path"
+    if [[ -L "$path" ]]; then
+        if ! command_exists readlink; then
+            log_error "acfs_chown_tree: readlink is required to resolve symlink: $path"
+            return 1
+        fi
+        resolved="$(readlink -f "$path" 2>/dev/null || true)"
+        if [[ -z "$resolved" ]] || [[ "$resolved" == "/" ]]; then
+            log_error "acfs_chown_tree: refusing to chown unresolved/unsafe symlink: $path"
+            return 1
+        fi
+    fi
+
+    # GNU coreutils: -h = do not dereference symlinks; -R = recursive.
+    $SUDO chown -hR "$owner_group" "$resolved"
+}
+
 confirm_or_exit() {
     if [[ "$DRY_RUN" == "true" ]] || [[ "$YES_MODE" == "true" ]]; then
         return 0
@@ -2090,7 +2127,7 @@ normalize_user() {
     # CRITICAL: useradd -m does NOT change ownership of existing directories (common on VPS)
     # Cloud images often pre-create /home/ubuntu owned by root:root
     if [[ -d "$TARGET_HOME" ]]; then
-        try_step "Setting home directory ownership" $SUDO chown -R "$TARGET_USER:$TARGET_USER" "$TARGET_HOME" || return 1
+        try_step "Setting home directory ownership" acfs_chown_tree "$TARGET_USER:$TARGET_USER" "$TARGET_HOME" || return 1
     fi
 
     # Set up passwordless sudo in vibe mode
@@ -2137,7 +2174,7 @@ normalize_user() {
                 printf "%s\n" "$line" >> "$dst"
             done < "$src"
         ' -- "$TARGET_HOME/.ssh/authorized_keys" || return 1
-        try_step "Setting SSH directory ownership" $SUDO chown -R "$TARGET_USER:$TARGET_USER" "$TARGET_HOME/.ssh" || return 1
+        try_step "Setting SSH directory ownership" acfs_chown_tree "$TARGET_USER:$TARGET_USER" "$TARGET_HOME/.ssh" || return 1
         try_step "Setting SSH directory permissions" $SUDO chmod 700 "$TARGET_HOME/.ssh" || return 1
         try_step "Setting authorized_keys permissions" $SUDO chmod 600 "$TARGET_HOME/.ssh/authorized_keys" || return 1
     fi
@@ -2174,12 +2211,12 @@ setup_filesystem() {
     done
 
     # Ensure /data is owned by target user
-    try_step "Setting /data ownership" $SUDO chown -R "$TARGET_USER:$TARGET_USER" /data || true
+    try_step "Setting /data ownership" acfs_chown_tree "$TARGET_USER:$TARGET_USER" /data || true
 
     # CRITICAL: Fix home directory ownership FIRST, before any run_as_target calls
     # Some cloud images (e.g., Hetzner) have /home/ubuntu owned by root after user creation
     # If we don't fix this first, all run_as_target mkdir calls below will fail
-    try_step "Fixing home directory ownership" $SUDO chown -R "$TARGET_USER:$TARGET_USER" "$TARGET_HOME" || true
+    try_step "Fixing home directory ownership" acfs_chown_tree "$TARGET_USER:$TARGET_USER" "$TARGET_HOME" || true
 
     # User directories (in TARGET_HOME, not $HOME)
     # CRITICAL: Create these as target user to ensure correct ownership
@@ -2194,7 +2231,7 @@ setup_filesystem() {
 
     # Create ACFS directories (as root, then chown)
     try_step "Creating ACFS directories" $SUDO mkdir -p "$ACFS_HOME"/{zsh,tmux,bin,docs,logs} || return 1
-    try_step "Setting ACFS directory ownership" $SUDO chown -R "$TARGET_USER:$TARGET_USER" "$ACFS_HOME" || return 1
+    try_step "Setting ACFS directory ownership" acfs_chown_tree "$TARGET_USER:$TARGET_USER" "$ACFS_HOME" || return 1
     try_step "Creating ACFS log directory" $SUDO mkdir -p "$ACFS_LOG_DIR" || return 1
 
     # Create user's .local/bin and .bun directories early - many installers need them
@@ -2238,7 +2275,7 @@ setup_shell() {
         # Use -rL to dereference symlinks (avoids broken symlinks pointing to /root/)
         log_detail "Oh My Zsh found in /root, copying to $TARGET_USER"
         $SUDO cp -rL /root/.oh-my-zsh "$omz_dir"
-        $SUDO chown -R "$TARGET_USER:$TARGET_USER" "$omz_dir"
+        acfs_chown_tree "$TARGET_USER:$TARGET_USER" "$omz_dir"
         omz_installed=true
     elif [[ -f "$TARGET_HOME/.zshrc" ]] && grep -q "oh-my-zsh" "$TARGET_HOME/.zshrc" 2>/dev/null; then
         # oh-my-zsh referenced in .zshrc but directory missing - unusual state
@@ -3384,7 +3421,7 @@ finalize() {
     log_detail "Installing onboard command"
     try_step "Installing onboard script" install_asset "packages/onboard/onboard.sh" "$ACFS_HOME/onboard/onboard.sh" || return 1
     try_step "Setting onboard permissions" $SUDO chmod 755 "$ACFS_HOME/onboard/onboard.sh" || return 1
-    try_step "Setting onboard ownership" $SUDO chown -R "$TARGET_USER:$TARGET_USER" "$ACFS_HOME/onboard" || return 1
+    try_step "Setting onboard ownership" acfs_chown_tree "$TARGET_USER:$TARGET_USER" "$ACFS_HOME/onboard" || return 1
 
     try_step "Creating .local/bin directory" run_as_target mkdir -p "$TARGET_HOME/.local/bin" || return 1
     try_step "Linking onboard command" run_as_target ln -sf "$ACFS_HOME/onboard/onboard.sh" "$TARGET_HOME/.local/bin/onboard" || return 1
@@ -3419,7 +3456,7 @@ finalize() {
     try_step "Installing services-setup.sh" install_asset "scripts/services-setup.sh" "$ACFS_HOME/scripts/services-setup.sh" || return 1
     try_step "Setting scripts permissions" $SUDO chmod 755 "$ACFS_HOME/scripts/services-setup.sh" || return 1
     try_step "Setting lib scripts permissions" $SUDO chmod 755 "$ACFS_HOME/scripts/lib/"*.sh || return 1
-    try_step "Setting scripts ownership" $SUDO chown -R "$TARGET_USER:$TARGET_USER" "$ACFS_HOME/scripts" || return 1
+    try_step "Setting scripts ownership" acfs_chown_tree "$TARGET_USER:$TARGET_USER" "$ACFS_HOME/scripts" || return 1
 
     # Install checksums + version metadata so `acfs update --stack` can verify upstream scripts.
     try_step "Installing checksums.yaml" install_asset "checksums.yaml" "$ACFS_HOME/checksums.yaml" || return 1

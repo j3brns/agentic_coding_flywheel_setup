@@ -646,7 +646,7 @@ EOF
 
     # Ensure ownership if run via sudo/root
     if [[ "$(whoami)" == "root" ]]; then
-        chown -R "$TARGET_USER:$TARGET_USER" "$settings_dir" 2>/dev/null || true
+        chown -hR "$TARGET_USER:$TARGET_USER" "$settings_dir" 2>/dev/null || true
     fi
 
     gum_success "Installed Claude Git Safety Guard"
