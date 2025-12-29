@@ -593,7 +593,8 @@ acfs-update --yes --quiet    # Automated/CI mode with minimal output
 | **Runtime** | Go | `apt upgrade` (if apt-managed) |
 | **Agents** | Claude Code | `claude update` |
 | **Agents** | Codex, Gemini | `bun install -g @latest` |
-| **Cloud** | Wrangler, Supabase, Vercel | `bun install -g @latest` |
+| **Cloud** | Wrangler, Vercel | `bun install -g @latest` |
+| **Cloud** | Supabase | GitHub release tarball (sha256 checksums) |
 | **Stack** | ntm, slb, ubs, etc. | Re-run upstream installers |
 
 ### Options
@@ -1087,7 +1088,7 @@ Component update logic with version tracking and logging:
 update_apt()       # apt update/upgrade with lock detection
 update_bun()       # bun upgrade with version tracking
 update_agents()    # Claude, Codex, Gemini (version before/after)
-update_cloud()     # Wrangler, Supabase, Vercel
+update_cloud()     # Wrangler, Supabase, Vercel (Supabase uses verified release tarball)
 update_rust()      # rustup update stable
 update_uv()        # uv self update
 update_go()        # Go toolchain update

@@ -6,7 +6,7 @@
 # ============================================================
 # Data-only manifest index. Safe to source.
 
-ACFS_MANIFEST_SHA256="49c8843d2d7976e8ba24bb6f8d5b0888cc84b8e9e0293654b4f6889662004f2e"
+ACFS_MANIFEST_SHA256="256363dade0a9dc33916b68453f6687e1f775cf9eead31cd19a413a05d21c0ff"
 
 ACFS_MODULES_IN_ORDER=(
   "base.system"
@@ -106,7 +106,7 @@ declare -gA ACFS_MODULE_DEPS=(
   [tools.vault]="base.system"
   [db.postgres18]="base.system"
   [cloud.wrangler]="lang.bun"
-  [cloud.supabase]="lang.bun"
+  [cloud.supabase]="base.system,base.filesystem"
   [cloud.vercel]="lang.bun"
   [stack.ntm]="cli.modern"
   [stack.mcp_agent_mail]="lang.bun,lang.uv,cli.modern"

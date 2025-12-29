@@ -802,7 +802,7 @@ check_cloud() {
     check_optional_command "cloud.vault" "Vault" "vault"
     check_optional_command "cloud.postgres" "PostgreSQL" "psql"
     check_optional_command "cloud.wrangler" "Wrangler" "wrangler" "bun install -g --trust wrangler@latest"
-    check_optional_command "cloud.supabase" "Supabase CLI" "supabase" "bun install -g --trust supabase@latest"
+    check_optional_command "cloud.supabase" "Supabase CLI" "supabase" "acfs update --cloud-only --force"
     check_optional_command "cloud.vercel" "Vercel CLI" "vercel" "bun install -g --trust vercel@latest"
 
     # Tailscale VPN (bt5)
@@ -1369,13 +1369,13 @@ check_wrangler_auth() {
 # Related: bead azw
 check_supabase_auth() {
     if ! command -v supabase &>/dev/null; then
-        check "deep.cloud.supabase" "Supabase CLI" "warn" "not installed" "bun install -g --trust supabase@latest"
+        check "deep.cloud.supabase" "Supabase CLI" "warn" "not installed" "acfs update --cloud-only --force"
         return
     fi
 
     # Check if binary works
     if ! timeout 5 supabase --version &>/dev/null; then
-        check "deep.cloud.supabase" "Supabase CLI" "fail" "binary error" "Reinstall: bun install -g --trust supabase@latest"
+        check "deep.cloud.supabase" "Supabase CLI" "fail" "binary error" "Reinstall: acfs update --cloud-only --force"
         return
     fi
 

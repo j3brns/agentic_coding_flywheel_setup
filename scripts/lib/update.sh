@@ -711,6 +711,115 @@ run_cmd_claude_update() {
     fi
 }
 
+supabase_release_update_script() {
+    cat <<'EOF'
+set -euo pipefail
+
+CURL_ARGS=(-fsSL)
+if command -v curl &>/dev/null && curl --help all 2>/dev/null | grep -q -- '--proto'; then
+  CURL_ARGS=(--proto '=https' --proto-redir '=https' -fsSL)
+fi
+
+arch=""
+case "$(uname -m)" in
+  x86_64) arch="amd64" ;;
+  aarch64|arm64) arch="arm64" ;;
+  *)
+    echo "Supabase CLI: unsupported architecture ($(uname -m))" >&2
+    exit 1
+    ;;
+esac
+
+release_url="$(curl "${CURL_ARGS[@]}" -o /dev/null -w '%{url_effective}\n' "https://github.com/supabase/cli/releases/latest" 2>/dev/null | tail -n1)" || true
+tag="${release_url##*/}"
+if [[ -z "$tag" ]] || [[ "$tag" != v* ]]; then
+  echo "Supabase CLI: failed to resolve latest release tag" >&2
+  exit 1
+fi
+
+version="${tag#v}"
+base_url="https://github.com/supabase/cli/releases/download/${tag}"
+tarball="supabase_linux_${arch}.tar.gz"
+checksums="supabase_${version}_checksums.txt"
+
+tmp_dir="$(mktemp -d "${TMPDIR:-/tmp}/acfs-supabase.XXXXXX" 2>/dev/null)" || tmp_dir=""
+tmp_tgz="$(mktemp "${TMPDIR:-/tmp}/acfs-supabase.tgz.XXXXXX" 2>/dev/null)" || tmp_tgz=""
+tmp_checksums="$(mktemp "${TMPDIR:-/tmp}/acfs-supabase.sha.XXXXXX" 2>/dev/null)" || tmp_checksums=""
+
+if [[ -z "$tmp_dir" ]] || [[ -z "$tmp_tgz" ]] || [[ -z "$tmp_checksums" ]]; then
+  echo "Supabase CLI: failed to create temp files" >&2
+  exit 1
+fi
+
+if ! curl "${CURL_ARGS[@]}" -o "$tmp_tgz" "${base_url}/${tarball}" 2>/dev/null; then
+  echo "Supabase CLI: failed to download ${tarball}" >&2
+  exit 1
+fi
+if ! curl "${CURL_ARGS[@]}" -o "$tmp_checksums" "${base_url}/${checksums}" 2>/dev/null; then
+  echo "Supabase CLI: failed to download checksums" >&2
+  exit 1
+fi
+
+expected_sha="$(awk -v tb="$tarball" '$2 == tb {print $1; exit}' "$tmp_checksums" 2>/dev/null)"
+if [[ -z "$expected_sha" ]]; then
+  echo "Supabase CLI: checksum entry not found for ${tarball}" >&2
+  exit 1
+fi
+
+actual_sha=""
+if command -v sha256sum &>/dev/null; then
+  actual_sha="$(sha256sum "$tmp_tgz" | awk '{print $1}')"
+elif command -v shasum &>/dev/null; then
+  actual_sha="$(shasum -a 256 "$tmp_tgz" | awk '{print $1}')"
+else
+  echo "Supabase CLI: no SHA256 tool available (need sha256sum or shasum)" >&2
+  exit 1
+fi
+
+if [[ -z "$actual_sha" ]] || [[ "$actual_sha" != "$expected_sha" ]]; then
+  echo "Supabase CLI: checksum mismatch" >&2
+  echo "  Expected: $expected_sha" >&2
+  echo "  Actual:   ${actual_sha:-<missing>}" >&2
+  exit 1
+fi
+
+if ! tar -xzf "$tmp_tgz" -C "$tmp_dir" --no-same-owner --no-same-permissions supabase 2>/dev/null; then
+  tar -xzf "$tmp_tgz" -C "$tmp_dir" --no-same-owner --no-same-permissions 2>/dev/null || {
+    echo "Supabase CLI: failed to extract tarball" >&2
+    exit 1
+  }
+fi
+
+extracted_bin="$tmp_dir/supabase"
+if [[ ! -f "$extracted_bin" ]]; then
+  extracted_bin="$(find "$tmp_dir" -maxdepth 2 -type f -name supabase -print -quit 2>/dev/null || true)"
+fi
+if [[ -z "$extracted_bin" ]] || [[ ! -f "$extracted_bin" ]]; then
+  echo "Supabase CLI: binary not found after extract" >&2
+  exit 1
+fi
+
+mkdir -p "$HOME/.local/bin"
+install -m 0755 "$extracted_bin" "$HOME/.local/bin/supabase"
+
+if command -v timeout &>/dev/null; then
+  timeout 5 "$HOME/.local/bin/supabase" --version >/dev/null 2>&1 || {
+    echo "Supabase CLI: installed but failed to run" >&2
+    exit 1
+  }
+else
+  "$HOME/.local/bin/supabase" --version >/dev/null 2>&1 || {
+    echo "Supabase CLI: installed but failed to run" >&2
+    exit 1
+  }
+fi
+
+# Best-effort cleanup
+rm -f "$tmp_tgz" "$tmp_checksums" "$extracted_bin" 2>/dev/null || true
+rmdir "$tmp_dir" 2>/dev/null || true
+EOF
+}
+
 update_cloud() {
     log_section "Cloud CLIs"
 
@@ -720,29 +829,38 @@ update_cloud() {
     fi
 
     local bun_bin="$HOME/.bun/bin/bun"
-
-    if [[ ! -x "$bun_bin" ]]; then
-        log_item "fail" "Bun not installed" "required for cloud CLI updates"
-        return 0
-    fi
+    local has_bun=false
+    [[ -x "$bun_bin" ]] && has_bun=true
 
     # Wrangler (--trust allows postinstall scripts for native binaries)
     if cmd_exists wrangler || [[ "$FORCE_MODE" == "true" ]]; then
-        run_cmd "Wrangler (Cloudflare)" "$bun_bin" install -g --trust wrangler@latest
+        if [[ "$has_bun" == "true" ]]; then
+            run_cmd "Wrangler (Cloudflare)" "$bun_bin" install -g --trust wrangler@latest
+        else
+            log_item "fail" "Wrangler (Cloudflare)" "bun not installed (required)"
+        fi
     else
         log_item "skip" "Wrangler" "not installed"
     fi
 
-    # Supabase (--trust allows postinstall scripts for native binaries)
+    # Supabase (verified GitHub release binary; installed to ~/.local/bin)
     if cmd_exists supabase || [[ "$FORCE_MODE" == "true" ]]; then
-        run_cmd "Supabase CLI" "$bun_bin" install -g --trust supabase@latest
+        capture_version_before "supabase"
+        run_cmd "Supabase CLI" bash -c "$(supabase_release_update_script)"
+        if capture_version_after "supabase"; then
+            [[ "$QUIET" != "true" ]] && echo -e "       ${DIM}${VERSION_BEFORE[supabase]} → ${VERSION_AFTER[supabase]}${NC}"
+        fi
     else
         log_item "skip" "Supabase CLI" "not installed"
     fi
 
     # Vercel (--trust allows postinstall scripts for native binaries)
     if cmd_exists vercel || [[ "$FORCE_MODE" == "true" ]]; then
-        run_cmd "Vercel CLI" "$bun_bin" install -g --trust vercel@latest
+        if [[ "$has_bun" == "true" ]]; then
+            run_cmd "Vercel CLI" "$bun_bin" install -g --trust vercel@latest
+        else
+            log_item "fail" "Vercel CLI" "bun not installed (required)"
+        fi
     else
         log_item "skip" "Vercel CLI" "not installed"
     fi
@@ -1314,7 +1432,8 @@ WHAT EACH CATEGORY UPDATES:
   agents:   Claude Code (claude update)
             Codex CLI (bun install -g --trust @openai/codex@latest)
             Gemini CLI (bun install -g --trust @google/gemini-cli@latest)
-  cloud:    Wrangler, Supabase CLI, Vercel CLI (bun install -g --trust <pkg>@latest)
+  cloud:    Wrangler, Vercel (bun install -g --trust <pkg>@latest)
+            Supabase CLI (verified GitHub release tarball + sha256 checksums)
   runtime:  Bun (bun upgrade), Rust (rustup update), uv (uv self update), Go (apt-managed)
   stack:    NTM, UBS, BV, CASS, CM, CAAM, SLB (re-run upstream installers)
 
