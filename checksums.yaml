@@ -28,7 +28,7 @@ installers:
 
   uv:
     url: "https://astral.sh/uv/install.sh"
-    sha256: "e27424708d1ac59cfc94e3f540a111f2edbb37bc8164febce8ee7fa5d5505c71"
+    sha256: "d699dd805396276f602b5f3063498ac049b562915bc55894c081ab4cf348ab5a"
 
   ntm:
     url: "https://raw.githubusercontent.com/Dicklesworthstone/ntm/main/install.sh"
