@@ -2810,11 +2810,13 @@ install_agents_phase() {
     local codex_bin_local="$TARGET_HOME/.local/bin/codex"
     if [[ -x "$TARGET_HOME/.bun/bin/codex" ]] && [[ ! -x "$codex_bin_local" ]]; then
         run_as_target mkdir -p "$TARGET_HOME/.local/bin" 2>/dev/null || true
-        try_step "Creating Codex bun wrapper" run_as_target bash -c "cat > '$codex_bin_local' << 'WRAPPER'
-#!/bin/bash
-exec ~/.bun/bin/bun ~/.bun/bin/codex \"\$@\"
-WRAPPER
-chmod +x '$codex_bin_local'" || true
+        # shellcheck disable=SC2016  # Variables expand inside the bash -c script, not here.
+        try_step "Creating Codex bun wrapper" run_as_target bash -c '
+            set -euo pipefail
+            wrapper_path="$1"
+            printf "%s\n" "#!/bin/bash" "exec ~/.bun/bin/bun ~/.bun/bin/codex \"\$@\"" > "$wrapper_path"
+            chmod +x "$wrapper_path"
+        ' _ "$codex_bin_local" || true
     fi
 
     # Gemini CLI (install as target user)
@@ -2825,11 +2827,13 @@ chmod +x '$codex_bin_local'" || true
     local gemini_bin_local="$TARGET_HOME/.local/bin/gemini"
     if [[ -x "$TARGET_HOME/.bun/bin/gemini" ]] && [[ ! -x "$gemini_bin_local" ]]; then
         run_as_target mkdir -p "$TARGET_HOME/.local/bin" 2>/dev/null || true
-        try_step "Creating Gemini bun wrapper" run_as_target bash -c "cat > '$gemini_bin_local' << 'WRAPPER'
-#!/bin/bash
-exec ~/.bun/bin/bun ~/.bun/bin/gemini \"\$@\"
-WRAPPER
-chmod +x '$gemini_bin_local'" || true
+        # shellcheck disable=SC2016  # Variables expand inside the bash -c script, not here.
+        try_step "Creating Gemini bun wrapper" run_as_target bash -c '
+            set -euo pipefail
+            wrapper_path="$1"
+            printf "%s\n" "#!/bin/bash" "exec ~/.bun/bin/bun ~/.bun/bin/gemini \"\$@\"" > "$wrapper_path"
+            chmod +x "$wrapper_path"
+        ' _ "$gemini_bin_local" || true
     fi
 
     log_success "Coding agents installed"
