@@ -169,10 +169,14 @@ dashboard_serve() {
     # Fallback if hostname -I returned empty
     [[ -z "$ip" ]] && ip="<your-server-ip>"
 
-    # Use the current user for SSH tunnel instructions.
+    # Prefer the invoking user for SSH tunnel instructions (handles `sudo acfs ...`).
     # Avoid hard-coding "ubuntu" so TARGET_USER installs aren't confusing.
-    local ssh_user
-    ssh_user="$(whoami 2>/dev/null || echo "ubuntu")"
+    local ssh_user=""
+    if [[ -n "${SUDO_USER:-}" ]] && [[ "${SUDO_USER}" != "root" ]]; then
+        ssh_user="$SUDO_USER"
+    else
+        ssh_user="$(whoami 2>/dev/null || echo "ubuntu")"
+    fi
 
     # Check if port is in use
     if command -v lsof &>/dev/null && lsof -i :"$port" &>/dev/null; then
