@@ -164,7 +164,7 @@ export function KeepingUpdatedLesson() {
 crontab -e
 
 # Add this line for weekly Sunday 3am updates
-0 3 * * 0 /home/ubuntu/.local/bin/acfs-update --yes --quiet >> ~/.acfs/logs/cron-update.log 2>&1`}
+0 3 * * 0 $HOME/.local/bin/acfs-update --yes --quiet >> $HOME/.acfs/logs/cron-update.log 2>&1`}
           />
         </div>
       </Section>
