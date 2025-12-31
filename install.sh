@@ -1131,7 +1131,11 @@ bootstrap_repo_archive() {
     fi
 
     local ref="$ACFS_REF"
-    local archive_url="https://github.com/${ACFS_REPO_OWNER}/${ACFS_REPO_NAME}/archive/${ref}.tar.gz"
+    # Cache-bust GitHub's CDN to ensure we get the latest archive
+    # GitHub caches archives for up to 5 minutes; this ensures fresh downloads
+    local cache_buster
+    cache_buster="$(date +%s)"
+    local archive_url="https://github.com/${ACFS_REPO_OWNER}/${ACFS_REPO_NAME}/archive/${ref}.tar.gz?cb=${cache_buster}"
     local ref_safe="${ref//[^a-zA-Z0-9._-]/_}"
     local tmp_archive
     local tmp_dir
@@ -1509,7 +1513,10 @@ acfs_load_upstream_checksums() {
     if [[ -n "$checksums_file" ]]; then
         content="$(cat "$checksums_file")"
     else
-        content="$(acfs_fetch_url_content "$ACFS_RAW/checksums.yaml")" || {
+        # Cache-bust to ensure we get the latest checksums.yaml
+        local cb
+        cb="$(date +%s)"
+        content="$(acfs_fetch_url_content "$ACFS_RAW/checksums.yaml?cb=${cb}")" || {
             log_error "Failed to fetch checksums.yaml from $ACFS_RAW"
             return 1
         }
