@@ -111,8 +111,8 @@ jobs:
 
           echo "Verifying checksums against upstream installer scripts..."
 
-          # Run verification and capture result
-          if ./scripts/lib/security.sh --verify --json > result.json 2>&1; then
+          # Run verification and capture result (stderr separate to avoid corrupting JSON)
+          if ./scripts/lib/security.sh --verify --json > result.json 2>verify-errors.log; then
             echo "✅ All checksums match upstream"
             echo "status=ok" >> $GITHUB_OUTPUT
           else

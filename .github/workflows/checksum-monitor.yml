@@ -36,7 +36,8 @@ jobs:
 
           # Note: --verify returns exit 1 when mismatches found, which is expected
           # We capture the JSON output regardless of exit code
-          ./scripts/lib/security.sh --verify --json > current.json 2>&1 || true
+          # stderr is separate to avoid corrupting JSON with any warning messages
+          ./scripts/lib/security.sh --verify --json > current.json 2>verify-errors.log || true
 
           # Check if JSON is valid
           if ! jq empty current.json 2>/dev/null; then

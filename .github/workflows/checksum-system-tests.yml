@@ -94,8 +94,8 @@ jobs:
         run: |
           echo "Testing JSON output format..."
 
-          # Run verification and capture output
-          ./scripts/lib/security.sh --verify --json > result.json 2>&1 || true
+          # Run verification and capture output (stderr separate to avoid corrupting JSON)
+          ./scripts/lib/security.sh --verify --json > result.json 2>verify-errors.log || true
 
           # Validate JSON structure
           if ! jq empty result.json 2>/dev/null; then
@@ -123,7 +123,7 @@ jobs:
         run: |
           echo "Validating checksum counts..."
 
-          ./scripts/lib/security.sh --verify --json > result.json 2>&1 || true
+          ./scripts/lib/security.sh --verify --json > result.json 2>/dev/null || true
 
           total=$(jq '.total' result.json)
           matches=$(jq '.matches | length' result.json)
@@ -155,7 +155,8 @@ jobs:
           echo "Testing --update-checksums output..."
 
           # Generate new checksums (sample, not full - takes too long)
-          timeout 60 ./scripts/lib/security.sh --update-checksums > new-checksums.yaml 2>&1 || {
+          # Note: stderr is separate to avoid corrupting YAML with progress messages
+          timeout 60 ./scripts/lib/security.sh --update-checksums > new-checksums.yaml 2>update-progress.log || {
             # Timeout is OK for partial test
             echo "Partial checksums generated (timeout after 60s is expected)"
           }
@@ -183,6 +184,8 @@ jobs:
           path: |
             result.json
             new-checksums.yaml
+            verify-errors.log
+            update-progress.log
 
   # ============================================================
   # Checksum Monitor Workflow Dry Run
@@ -204,7 +207,8 @@ jobs:
           echo "🔍 Simulating checksum-monitor verification..."
 
           # This mirrors the logic in checksum-monitor.yml
-          ./scripts/lib/security.sh --verify --json > current.json 2>&1 || true
+          # Note: stderr separate to avoid corrupting JSON
+          ./scripts/lib/security.sh --verify --json > current.json 2>/dev/null || true
 
           # Check if JSON is valid
           if ! jq empty current.json 2>/dev/null; then
@@ -320,7 +324,7 @@ jobs:
 
           echo "Checking if committed checksums match upstream..."
 
-          if ./scripts/lib/security.sh --verify --json > result.json 2>&1; then
+          if ./scripts/lib/security.sh --verify --json > result.json 2>/dev/null; then
             echo "✅ All checksums are fresh"
           else
             echo "⚠️ Some checksums are stale (this triggers checksum-monitor)"
