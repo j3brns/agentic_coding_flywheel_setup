@@ -285,6 +285,29 @@ export CLOUDFLARE_ACCOUNT_ID="your-account-id"`}</pre>
           </div>
         </AlertCard>
 
+        {/* Other cloud tools headless auth */}
+        <AlertCard variant="warning" icon={AlertCircle} title="Supabase & Vercel: Headless VPS Setup">
+          <div className="space-y-2">
+            <p>
+              These CLIs also use browser-based OAuth. For headless VPS, use access tokens instead.
+            </p>
+            <div className="text-sm space-y-2">
+              <p className="font-medium">Supabase:</p>
+              <ol className="list-decimal list-inside space-y-1 pl-2 text-sm">
+                <li>Go to <a href="https://supabase.com/dashboard/account/tokens" target="_blank" rel="noopener noreferrer" className="text-primary underline">Supabase → Access Tokens</a></li>
+                <li>Create a token, then add to <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">~/.zshrc</code>:</li>
+              </ol>
+              <pre className="rounded bg-muted p-2 text-xs font-mono">{`export SUPABASE_ACCESS_TOKEN="your-token-here"`}</pre>
+
+              <p className="font-medium mt-2">Vercel:</p>
+              <ol className="list-decimal list-inside space-y-1 pl-2 text-sm">
+                <li>Go to <a href="https://vercel.com/account/tokens" target="_blank" rel="noopener noreferrer" className="text-primary underline">Vercel → Tokens</a></li>
+                <li>Create a token, then use with commands: <code className="rounded bg-muted px-1 py-0.5 font-mono text-xs">vercel --token YOUR_TOKEN</code></li>
+              </ol>
+            </div>
+          </div>
+        </AlertCard>
+
         <AlertCard variant="success" icon={Bot} title="You don't need to log into everything right now">
           <div className="space-y-2 text-sm">
             <p className="text-muted-foreground">

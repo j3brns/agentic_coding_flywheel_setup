@@ -701,7 +701,8 @@ check_shell() {
 
     check_command "shell.atuin" "Atuin" "atuin" "Re-run the ACFS installer (language runtimes phase)"
     check_command "shell.fzf" "fzf" "fzf" "sudo apt install fzf"
-    check_command "shell.zoxide" "zoxide" "zoxide"
+    check_command "shell.zoxide" "zoxide" "zoxide" \
+        "Re-run: curl -fsSL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | bash"
     check_command "shell.direnv" "direnv" "direnv" "sudo apt install direnv"
 
     blank_line
@@ -890,8 +891,10 @@ check_cloud() {
 check_stack() {
     section "Dicklesworthstone stack"
 
-    check_command "stack.ntm" "NTM" "ntm"
-    check_command "stack.slb" "SLB" "slb"
+    check_command "stack.ntm" "NTM" "ntm" \
+        "Re-run: curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/ntm/main/install.sh | bash"
+    check_command "stack.slb" "SLB" "slb" \
+        "Re-run: curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/simultaneous_launch_button/main/scripts/install.sh | bash"
 
     # UBS - custom check
     if command -v ubs &>/dev/null; then
@@ -903,7 +906,8 @@ check_stack() {
             "Re-run: curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/ultimate_bug_scanner/master/install.sh | bash"
     fi
 
-    check_command "stack.bv" "Beads Viewer" "bv"
+    check_command "stack.bv" "Beads Viewer" "bv" \
+        "Re-run: curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/beads_viewer/main/install.sh | bash"
 
     # CASS - custom check
     if command -v cass &>/dev/null; then
@@ -925,7 +929,8 @@ check_stack() {
     if command -v am &>/dev/null || [[ -d "$HOME/mcp_agent_mail" ]]; then
         check "stack.mcp_agent_mail" "MCP Agent Mail" "pass"
     else
-        check "stack.mcp_agent_mail" "MCP Agent Mail" "warn"
+        check "stack.mcp_agent_mail" "MCP Agent Mail" "warn" "not installed" \
+            "Re-run: curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/mcp_agent_mail/main/scripts/install.sh | bash"
     fi
 
     blank_line
@@ -1525,12 +1530,12 @@ check_supabase_auth() {
         if [[ -s "$access_token_file" || -s "$alt_access_token_file" ]]; then
             check "deep.cloud.supabase" "Supabase CLI auth" "pass" "access token exists"
         else
-            check "deep.cloud.supabase" "Supabase CLI auth" "warn" "empty access token" "supabase login"
+            check "deep.cloud.supabase" "Supabase CLI auth" "warn" "empty access token" "supabase login (or set SUPABASE_ACCESS_TOKEN for headless)"
         fi
     elif [[ -n "${SUPABASE_ACCESS_TOKEN:-}" ]]; then
         check "deep.cloud.supabase" "Supabase CLI auth" "pass" "SUPABASE_ACCESS_TOKEN set"
     else
-        check "deep.cloud.supabase" "Supabase CLI auth" "warn" "not authenticated" "supabase login"
+        check "deep.cloud.supabase" "Supabase CLI auth" "warn" "not authenticated" "supabase login (or set SUPABASE_ACCESS_TOKEN for headless)"
     fi
 }
 
@@ -1576,7 +1581,7 @@ check_vercel_auth() {
             cache_result "vercel_auth" "auth file present"
             check "deep.cloud.vercel_auth" "Vercel auth" "pass" "auth file present"
         else
-            check "deep.cloud.vercel_auth" "Vercel auth" "warn" "not authenticated" "vercel login"
+            check "deep.cloud.vercel_auth" "Vercel auth" "warn" "not authenticated" "vercel login (or use --token for headless)"
         fi
     fi
 }
