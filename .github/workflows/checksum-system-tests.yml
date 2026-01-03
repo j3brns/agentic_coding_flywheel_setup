@@ -169,11 +169,12 @@ jobs:
           fi
           echo "✅ Output contains 'installers:' key"
 
-          # Check YAML is parseable (at least the header)
-          if ! head -50 new-checksums.yaml | python3 -c "import yaml, sys; yaml.safe_load(sys.stdin)" 2>/dev/null; then
-            echo "⚠️ Warning: YAML may be incomplete (expected for partial generation)"
+          # Check YAML has valid structure (basic validation without PyYAML dependency)
+          # Look for expected keys in the output
+          if head -50 new-checksums.yaml | grep -qE "^  [a-z_]+:$"; then
+            echo "✅ YAML has expected structure (installer entries found)"
           else
-            echo "✅ YAML is parseable"
+            echo "⚠️ Warning: YAML structure may be incomplete (expected for partial generation with 60s timeout)"
           fi
 
       - name: Upload test results
@@ -290,7 +291,8 @@ jobs:
           echo "Testing checksums generation..."
 
           # Run update (but don't actually use it)
-          ./scripts/lib/security.sh --update-checksums > checksums.yaml.new 2>&1 || {
+          # stderr separate to avoid corrupting YAML with progress messages
+          ./scripts/lib/security.sh --update-checksums > checksums.yaml.new 2>/dev/null || {
             echo "⚠️ Checksum generation may have timed out (expected for full run)"
           }
 
