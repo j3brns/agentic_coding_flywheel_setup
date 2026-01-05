@@ -264,15 +264,17 @@ _configure_gemini_settings() {
     # If settings file doesn't exist, create it with tmux-compatible defaults
     if [[ ! -f "$settings_file" ]]; then
         log_detail "Creating Gemini settings for tmux compatibility..."
-        _agent_run_as_user "cat > '$settings_file'" << 'EOF'
+        # Write default settings - the JSON is simple enough to inline
+        # Note: Using double quotes for variable expansion, escaping inner quotes
+        _agent_run_as_user "cat > '$settings_file' << 'GEMINI_EOF'
 {
-  "tools": {
-    "shell": {
-      "enableInteractiveShell": false
+  \"tools\": {
+    \"shell\": {
+      \"enableInteractiveShell\": false
     }
   }
 }
-EOF
+GEMINI_EOF"
         return $?
     fi
 
@@ -285,13 +287,12 @@ EOF
         if [[ "$current_value" == "unset" || "$current_value" == "error" ]]; then
             log_detail "Adding tmux-compatible shell settings to Gemini config..."
             local tmp_file="$settings_dir/.settings.tmp.$$"
-            if _agent_run_as_user "jq '.tools = (.tools // {}) | .tools.shell = (.tools.shell // {}) | .tools.shell.enableInteractiveShell = false' '$settings_file'" > "$tmp_file" 2>/dev/null; then
-                _agent_run_as_user "mv '$tmp_file' '$settings_file'" 2>/dev/null || {
-                    rm -f "$tmp_file" 2>/dev/null
-                    log_warn "Could not update Gemini settings automatically"
-                }
+            # Run jq and redirect INSIDE the _agent_run_as_user command so file is owned by target user
+            if _agent_run_as_user "jq '.tools = (.tools // {}) | .tools.shell = (.tools.shell // {}) | .tools.shell.enableInteractiveShell = false' '$settings_file' > '$tmp_file' && mv '$tmp_file' '$settings_file'" 2>/dev/null; then
+                : # Success
             else
-                rm -f "$tmp_file" 2>/dev/null
+                _agent_run_as_user "rm -f '$tmp_file'" 2>/dev/null
+                log_warn "Could not update Gemini settings automatically"
             fi
         else
             log_detail "Gemini shell settings already configured (enableInteractiveShell=$current_value)"
