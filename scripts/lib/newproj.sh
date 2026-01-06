@@ -114,7 +114,15 @@ main() {
         git init
         echo "# $project_name" > README.md
         git add README.md
-        git commit -m "Initial commit"
+
+        # Check if git user is configured before committing
+        if git config user.name &>/dev/null && git config user.email &>/dev/null; then
+            git commit -m "Initial commit"
+        else
+            echo -e "${YELLOW}Warning: Git user not configured, skipping initial commit${NC}"
+            echo -e "${YELLOW}Run: git config --global user.name \"Your Name\"${NC}"
+            echo -e "${YELLOW}     git config --global user.email \"you@example.com\"${NC}"
+        fi
     else
         echo -e "${CYAN}Git already initialized, skipping${NC}"
     fi
