@@ -62,6 +62,12 @@ plugins=(
   command-not-found
   docker
   docker-compose
+  python
+  pip
+  tmux
+  tmuxinator
+  systemd
+  rsync
   zsh-autosuggestions
   zsh-syntax-highlighting
 )
