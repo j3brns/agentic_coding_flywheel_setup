@@ -869,6 +869,66 @@ Plan (Beads) ──> Coordinate (Agent Mail) ──> Execute (NTM + Agents)
 | Memory-Augmented Debugging | Past solutions for current bugs | 15 min |
 | Coordinated Feature Dev | Multiple agents, one feature | 2+ hours |
 
+### Interactive Website Components
+
+The wizard website includes specialized components for guiding beginners:
+
+**ConnectionCheck Component:**
+A prominent visual that helps users verify they're connected to their VPS before running commands:
+- Side-by-side comparison: "Wrong (laptop)" vs "Right (VPS)"
+- Terminal prompt examples for Windows, Mac, and Linux
+- Clear "STOP!" warning with color-coded styling
+
+**CommandCard Component:**
+CLI instruction cards with:
+- Syntax-highlighted code blocks
+- One-click copy button
+- Platform-specific variations (bash/zsh/PowerShell)
+- Expandable explanations
+
+**Jargon Tooltips:**
+Hover over technical terms to see definitions:
+- One-liner for quick understanding
+- Full explanation for deeper context
+- "Think of it like..." analogies
+- Links to related terms
+
+**Confetti Celebration:**
+On lesson completion:
+- Burst of celebratory confetti particles
+- Randomized encouraging messages
+- Special celebration for completing all lessons
+- Respects `prefers-reduced-motion` setting
+
+**Stepper Component:**
+Multi-step progress indicator:
+- Visual step-by-step progress
+- Clickable navigation
+- Completion checkmarks
+- Mobile-responsive design
+
+### Expanded Lesson Library
+
+The Learning Hub includes specialized lessons for each tool in the Dicklesworthstone stack:
+
+| Lesson | Topics |
+|--------|--------|
+| **UBS (Bug Scanner)** | Scan workflow, severity levels, CI integration |
+| **Agent Mail** | Registration, messaging, file reservations |
+| **CASS (Session Search)** | Indexing, searching, cross-agent queries |
+| **CASS Memory (cm)** | Rule extraction, playbook management |
+| **Beads** | Issue tracking, graph metrics, priorities |
+| **SLB (Safety)** | Two-person rule, dangerous command approval |
+| **Prompt Engineering** | Effective prompts, context management |
+| **Real-World Case Study** | End-to-end feature development walkthrough |
+
+Each lesson includes:
+- Conceptual introduction
+- Practical commands with examples
+- Interactive exercises
+- Common pitfalls to avoid
+- Links to tool documentation
+
 ---
 
 ## Interactive Onboarding (TUI)
@@ -1749,6 +1809,39 @@ ACFS works on any Ubuntu VPS with SSH key login. Here are recommended providers 
 
 Any provider with Ubuntu VPS and SSH key login works. The wizard at [agent-flywheel.com](https://agent-flywheel.com) has step-by-step guides.
 
+### Provider Setup Guides
+
+ACFS includes detailed step-by-step guides for each supported provider in `scripts/providers/`:
+
+| Provider | Guide | Key Sections |
+|----------|-------|--------------|
+| **Contabo** | `contabo.md` | Account creation, plan selection, data center choice, SSH key setup |
+| **OVH** | `ovh.md` | Control panel navigation, instance configuration, networking |
+| **Hetzner** | `hetzner.md` | Project setup, firewall rules, console access |
+
+Each guide includes:
+- **Screenshots** for every step (in `scripts/providers/screenshots/`)
+- **Pricing breakdowns** with recommendations
+- **Region selection** guidance (latency, privacy)
+- **SSH key** configuration specific to that provider
+- **Troubleshooting** for common provisioning issues
+
+**Provider Comparison:**
+
+| Aspect | Contabo | OVH | Hetzner |
+|--------|---------|-----|---------|
+| Best For | Maximum value | EU data residency | German engineering |
+| Provisioning | 1-3 hours | 5-30 minutes | 2-10 minutes |
+| Support | Email only | Phone + chat | 24/7 ticket system |
+| Data Centers | EU, US, Asia | Global | EU only |
+| Payment | Monthly | Hourly or monthly | Hourly or monthly |
+
+**Recommendation Flow:**
+1. **Budget**: Contabo (best specs per dollar)
+2. **Speed**: Hetzner (instant provisioning)
+3. **Support**: OVH (phone support available)
+4. **Privacy**: Any EU provider (GDPR compliance)
+
 ---
 
 ## Project Structure
@@ -1876,6 +1969,105 @@ shellcheck install.sh scripts/lib/*.sh
 # Update checksums after reviewing upstream changes
 ./scripts/lib/security.sh --update-checksums > checksums.yaml
 ```
+
+### Manifest Validation
+
+The manifest parser includes comprehensive validation beyond basic schema checking:
+
+**Validation Error Codes:**
+
+| Code | Description |
+|------|-------------|
+| `MISSING_DEPENDENCY` | Module references non-existent dependency |
+| `DEPENDENCY_CYCLE` | Circular dependency detected (A→B→C→A) |
+| `PHASE_VIOLATION` | Module runs before its dependencies |
+| `FUNCTION_NAME_COLLISION` | Two modules generate same bash function |
+| `RESERVED_NAME_COLLISION` | Module uses reserved identifier |
+| `INVALID_VERIFIED_INSTALLER_RUNNER` | Runner not in allowlist (bash/sh only) |
+
+**Running Validation:**
+```bash
+cd packages/manifest
+bun run validate              # Full validation
+bun run validate --verbose    # Show all checks
+```
+
+**Cycle Detection Algorithm:**
+```
+Tarjan's strongly connected components (SCC):
+1. DFS with discovery/low-link tracking
+2. Identify SCCs with size > 1 as cycles
+3. Report cycle path for human debugging
+```
+
+### Test Harness
+
+ACFS includes a comprehensive test harness (`tests/vm/lib/test_harness.sh`) for integration testing:
+
+```bash
+# Source the harness
+source tests/vm/lib/test_harness.sh
+
+# Initialize test suite
+harness_init "ACFS Installation Tests"
+
+# Create test sections
+harness_section "Phase 1: Base Packages"
+
+# Run commands with automatic logging
+harness_run "Installing curl" apt install -y curl
+
+# Assert results
+harness_pass "curl installed successfully"
+harness_fail "curl installation failed"
+harness_skip "Skipping optional test"
+
+# Generate summary
+harness_summary  # Outputs: 15 passed, 0 failed, 2 skipped
+```
+
+**Test Files:**
+
+| Test | Purpose |
+|------|---------|
+| `test_install_ubuntu.sh` | Full Docker-based installation |
+| `test_acfs_update.sh` | Update mechanism validation |
+| `bootstrap_offline_checks.sh` | Offline system readiness |
+| `resume_checks.sh` | State resume validation |
+| `selection_checks.sh` | Module selection unit tests |
+| `selection_e2e.sh` | End-to-end selection flow |
+
+**Running Tests:**
+```bash
+# Full Docker integration test
+./tests/vm/test_install_ubuntu.sh
+
+# Selection logic tests
+./tests/vm/selection_checks.sh
+
+# Web E2E tests
+./tests/web/run_e2e.sh
+```
+
+### Sync Scripts
+
+Sync scripts keep ACFS documentation aligned with upstream projects:
+
+```bash
+# Sync NTM command palette from upstream
+./scripts/sync/sync_ntm_palette.sh
+
+# Check if update available (without downloading)
+./scripts/sync/sync_ntm_palette.sh --check
+```
+
+**Current Sync Sources:**
+
+| Script | Source | Destination |
+|--------|--------|-------------|
+| `sync_ntm_palette.sh` | NTM repo `command_palette.md` | `acfs/onboard/docs/ntm/` |
+
+All sync scripts use the security library for HTTPS enforcement and content hashing.
 
 ### Website Design System
 
