@@ -11,7 +11,6 @@ TESTS_DIR="$(cd "$E2E_DIR/.." && pwd)"
 PROJECT_ROOT="$(cd "$TESTS_DIR/.." && pwd)"
 ACFS_LIB_DIR="$PROJECT_ROOT/scripts/lib"
 E2E_LIB_DIR="$E2E_DIR/lib"
-E2E_FIXTURES_DIR="$E2E_DIR/fixtures"
 E2E_LOGS_DIR="$E2E_DIR/logs"
 
 # Ensure directories exist
@@ -204,7 +203,7 @@ verify_feature_enabled() {
             [[ -f "$project_dir/AGENTS.md" ]]
             ;;
         beads|bd)
-            [[ -d "$project_dir/.beads" ]] && [[ -f "$project_dir/.beads/beads.jsonl" ]]
+            [[ -d "$project_dir/.beads" ]] && [[ -f "$project_dir/.beads/beads.db" ]]
             ;;
         claude)
             [[ -d "$project_dir/.claude" ]] && [[ -f "$project_dir/.claude/settings.local.json" ]]
@@ -315,6 +314,7 @@ run_wizard_happy_path() {
 
     local input_sequence
     input_sequence=$(cat <<EOF
+
 ${project_name}
 ${project_base}/${project_name}
 

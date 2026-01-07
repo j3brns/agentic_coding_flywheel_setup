@@ -196,8 +196,13 @@ tui_run_with_input() {
     if command -v script &>/dev/null && [[ -c /dev/ptmx ]]; then
         tui_log "DEBUG" "Using script for PTY allocation"
         TUI_LAST_EXIT_CODE=0
+        # Write input to temp file to avoid quoting issues
+        local input_file
+        input_file=$(mktemp)
+        printf '%s' "$input" > "$input_file"
         # Use script -q to allocate PTY
-        $timeout_cmd script -q -c "echo '$input' | $cmd ${args[*]}" "$output_file" 2>&1 || TUI_LAST_EXIT_CODE=$?
+        $timeout_cmd script -q -c "cat '$input_file' | '$cmd' $(printf '%q ' "${args[@]}")" "$output_file" 2>&1 || TUI_LAST_EXIT_CODE=$?
+        rm -f "$input_file"
     else
         tui_log "DEBUG" "Using direct stdin piping"
         TUI_LAST_EXIT_CODE=0
