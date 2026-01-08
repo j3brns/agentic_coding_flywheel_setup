@@ -66,3 +66,19 @@ installers:
     url: "https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh"
     sha256: "ce0b7c94aa04d8c7a8137e45fe5c4744e3947871f785fd58117c480c1bf49352"
 
+  dcg:
+    url: "https://raw.githubusercontent.com/Dicklesworthstone/destructive_command_guard/master/install.sh"
+    sha256: "e6f686709849ed8e8be854570b77774134295f4badccfc021667fbdf7a8dc3e6"
+
+  ru:
+    url: "https://raw.githubusercontent.com/Dicklesworthstone/repo_updater/main/install.sh"
+    sha256: "9a9f4cb42a1e801c36acc761ea513fef92c237fab6f56bbe5dae5cf7c27da51e"
+
+  giil:
+    url: "https://raw.githubusercontent.com/Dicklesworthstone/giil/main/install.sh"
+    sha256: "7b9f886b42c593288978983490363c2e3d49ef908903fbd4bd9b25a7187fe63a"
+
+  csctf:
+    url: "https://raw.githubusercontent.com/Dicklesworthstone/chat_shared_conversation_to_file/main/install.sh"
+    sha256: "fdfe45720ab1414ef496a4d95b725e79dc7abe114353fc6e86618527eb29f3dd"
+

@@ -56,10 +56,10 @@ export function FlywheelLoopLesson() {
 
       <Divider />
 
-      {/* The Eight Tools */}
+      {/* The Ten Tools */}
       <Section
         {...{
-          title: "The Eight Tools (And When To Use Them)",
+          title: "The Ten Tools (And When To Use Them)",
           icon: <Zap className="h-5 w-5" />,
           delay: 0.15,
         }}

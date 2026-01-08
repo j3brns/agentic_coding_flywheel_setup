@@ -242,7 +242,7 @@ These are installed on target VPS (not development machine).
 - **Supabase CLI** — Supabase management
 - **Vercel CLI** — Vercel deployment
 
-### Dicklesworthstone Stack (all 8 tools)
+### Dicklesworthstone Stack (10 tools + utilities)
 1. **ntm** — Named Tmux Manager (agent cockpit)
 2. **mcp_agent_mail** — Agent coordination via mail-like messaging
 3. **ultimate_bug_scanner** (`ubs`) — Bug scanning with guardrails
@@ -251,6 +251,12 @@ These are installed on target VPS (not development machine).
 6. **cass_memory_system** (`cm`) — Procedural memory for agents
 7. **coding_agent_account_manager** (`caam`) — Agent auth switching
 8. **simultaneous_launch_button** (`slb`) — Two-person rule for dangerous commands
+9. **destructive_command_guard** (`dcg`) — Claude Code hook blocking dangerous commands
+10. **repo_updater** (`ru`) — Multi-repo sync + AI-driven commit automation
+
+**Utilities:**
+- **giil** — Download cloud images (iCloud, Dropbox, Google Photos) for visual debugging
+- **csctf** — Convert AI chat share links to Markdown/HTML archives
 
 ---
 
@@ -686,3 +692,136 @@ Parse: `file:line:col` → location | 💡 → how to fix | Exit 0/1 → pass/fa
 - ❌ Ignore findings → ✅ Investigate each
 - ❌ Full scan per edit → ✅ Scope to file
 - ❌ Fix symptom (`if (x) { x.y }`) → ✅ Root cause (`x?.y`)
+
+---
+
+## DCG Quick Reference for AI Agents
+
+DCG (Destructive Command Guard) is a Claude Code hook that **blocks dangerous git and filesystem commands** before execution. Sub-millisecond latency, mechanical enforcement.
+
+**Auto-Blocked Commands:**
+```bash
+git reset --hard               # Destroys uncommitted changes
+git checkout -- <files>        # Discards file changes permanently
+git restore <files>            # Same as checkout -- (not --staged)
+git push --force / -f          # Overwrites remote history
+git clean -f                   # Deletes untracked files
+git branch -D                  # Force-deletes without merge check
+git stash drop / clear         # Permanently deletes stashes
+rm -rf <non-temp>              # Recursive deletion
+```
+
+**Always Allowed:**
+```bash
+git checkout -b <branch>       # Creates branch, doesn't touch files
+git restore --staged           # Only unstages, safe
+git clean -n                   # Dry-run, preview only
+rm -rf /tmp/...                # Temp directories are ephemeral
+git push --force-with-lease    # Safe force push variant
+```
+
+**When Blocked:**
+- You'll see a clear reason explaining why
+- Ask the user to run the command manually if truly needed
+- Consider safer alternatives (git stash, --force-with-lease)
+
+**Configuration (optional):**
+```toml
+# ~/.config/dcg/config.toml
+[packs]
+enabled = ["database.postgresql", "containers.docker"]
+```
+
+---
+
+## RU Quick Reference for AI Agents
+
+RU (Repo Updater) is a multi-repo sync tool with **AI-driven commit automation**.
+
+**Common Commands:**
+```bash
+ru sync                        # Clone missing + pull updates for all repos
+ru sync --parallel 4           # Parallel sync (4 workers)
+ru status                      # Check repo status without changes
+ru status --fetch              # Fetch + show ahead/behind
+ru list --paths                # List all repo paths
+```
+
+**Agent Sweep (commit automation):**
+```bash
+ru agent-sweep --dry-run       # Preview dirty repos to process
+ru agent-sweep --parallel 4    # AI-driven commits in parallel
+ru agent-sweep --with-release  # Include version tag + release
+```
+
+**Exit Codes:**
+- `0` = Success
+- `1` = Partial failure (some repos failed)
+- `2` = Conflicts exist (manual resolution needed)
+- `5` = Interrupted (use `--resume`)
+
+**Best Practices:**
+- Use `ru status` before `ru sync` to preview changes
+- Use `ru agent-sweep --dry-run` before full automation
+- Scope with `--repos=pattern` for targeted operations
+
+---
+
+## giil Quick Reference for AI Agents
+
+giil (Get Image from Internet Link) downloads **cloud-hosted images** to the terminal for visual debugging.
+
+**Usage:**
+```bash
+giil "https://share.icloud.com/..."       # Download iCloud photo
+giil "https://www.dropbox.com/s/..."      # Download Dropbox image
+giil "https://photos.google.com/..."      # Download Google Photos image
+giil "..." --output ~/screenshots         # Custom output directory
+giil "..." --json                         # JSON metadata output
+giil "..." --all                          # Download all photos from album
+```
+
+**Supported Platforms:**
+- iCloud (share.icloud.com)
+- Dropbox (dropbox.com/s/, dl.dropbox.com)
+- Google Photos (photos.google.com)
+- Google Drive (drive.google.com)
+
+**Exit Codes:**
+- `0` = Success
+- `10` = Network error
+- `11` = Auth required (not publicly shared)
+- `12` = Not found (expired link)
+- `13` = Unsupported type (video, doc)
+
+**Visual Debugging Workflow:**
+1. User screenshots bug on phone
+2. Shares iCloud/Dropbox link with agent
+3. `giil "<url>"` downloads to working directory
+4. Agent analyzes the image
+
+---
+
+## csctf Quick Reference for AI Agents
+
+csctf (Chat Shared Conversation to File) converts **AI chat share links** to Markdown/HTML.
+
+**Usage:**
+```bash
+csctf "https://chatgpt.com/share/..."      # ChatGPT conversation
+csctf "https://gemini.google.com/share/..." # Gemini conversation
+csctf "https://claude.ai/share/..."         # Claude conversation
+csctf "..." --md-only                       # Markdown only (no HTML)
+csctf "..." --json                          # JSON metadata output
+csctf "..." --publish-to-gh-pages --yes     # Publish to GitHub Pages
+```
+
+**Output:**
+- `<slug>.md` — Clean Markdown with code blocks
+- `<slug>.html` — Static HTML with syntax highlighting
+
+**Use Cases:**
+- Archive important AI conversations for reference
+- Build searchable knowledge base
+- Share solutions with team members
+- Document debugging sessions for future learning

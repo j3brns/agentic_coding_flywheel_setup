@@ -51,7 +51,7 @@ The installer is **idempotent**—if interrupted, simply re-run it. It will auto
 - **Zero to Hero:** Takes complete beginners from "I have a laptop" to "I have Claude/Codex/Gemini agents writing code for me on a VPS"
 - **One-Liner Magic:** A single `curl | bash` command installs 30+ tools, configures everything, and sets up three AI coding agents
 - **Vibe Mode:** Pre-configured for maximum velocity—passwordless sudo, dangerous agent flags enabled, optimized shell environment
-- **Battle-Tested Stack:** Includes the complete Dicklesworthstone stack (8 tools) for agent orchestration, coordination, and safety
+- **Battle-Tested Stack:** Includes the complete Dicklesworthstone stack (10 tools + utilities) for agent orchestration, coordination, and safety
 
 **What you get:**
 - Modern shell (zsh + oh-my-zsh + powerlevel10k)
@@ -457,7 +457,7 @@ graph TD
     E["Phase 5: Language Runtimes<br/><small>bun, uv, rust, go</small>"]
     F["Phase 6: AI Agents<br/><small>claude, codex, gemini</small>"]
     G["Phase 7: Cloud Tools<br/><small>vault, wrangler, supabase, vercel</small>"]
-    H["Phase 8: Dicklesworthstone Stack<br/><small>ntm, slb, ubs, mcp_agent_mail, etc.</small>"]
+    H["Phase 8: Dicklesworthstone Stack<br/><small>ntm, dcg, ru, ubs, mcp_agent_mail, etc.</small>"]
     I["Phase 9: Configuration<br/><small>Deploy acfs.zshrc, tmux.conf</small>"]
     J["Phase 10: Verification<br/><small>acfs doctor</small>"]
 
@@ -807,7 +807,7 @@ The Learning Hub provides interactive lessons with progress tracking:
 | 6 | Agent Commands | 10 min | Claude, Codex, Gemini usage |
 | 7 | NTM Command Center | 8 min | Session orchestration |
 | 8 | NTM Prompt Palette | 6 min | Quick command access |
-| 9 | The Flywheel Loop | 8 min | How all 8 tools work together |
+| 9 | The Flywheel Loop | 8 min | How all 10 tools work together |
 
 **Features:**
 - Progress tracking in localStorage
@@ -1119,7 +1119,7 @@ Vault is installed by default (skip with `--skip-vault`). ACFS installs the Vaul
 
 Supabase networking note: some Supabase projects expose the **direct Postgres host over IPv6-only** (often on free tiers). If your VPS/network is **IPv4-only**, use the Supabase **pooler** connection string instead (or upgrade/configure networking for direct IPv4).
 
-### Dicklesworthstone Stack (8 Tools)
+### Dicklesworthstone Stack (10 Tools)
 
 The complete suite of tools for professional agentic workflows:
 
@@ -1133,6 +1133,17 @@ The complete suite of tools for professional agentic workflows:
 | 6 | **CASS Memory System** | `cm` | Procedural memory for agents |
 | 7 | **Coding Agent Account Manager** | `caam` | Agent auth switching |
 | 8 | **Simultaneous Launch Button** | `slb` | Two-person rule for dangerous commands |
+| 9 | **Destructive Command Guard** | `dcg` | Claude Code hook blocking dangerous git/fs commands |
+| 10 | **Repo Updater** | `ru` | Multi-repo sync + AI-driven commit automation |
+
+### Bundled Utilities
+
+Additional productivity tools installed alongside the stack:
+
+| Tool | Command | Description |
+|------|---------|-------------|
+| **Get Image from Internet Link** | `giil` | Download images from iCloud, Dropbox, Google Photos for visual debugging |
+| **Chat Shared Conversation to File** | `csctf` | Convert AI share links (ChatGPT, Gemini, Claude) to Markdown/HTML |
 
 ---
 
@@ -1186,9 +1197,15 @@ $ acfs doctor
 ║   ✔ cass 0.4.2                                                ║
 ║   ✔ cm 0.1.3                                                  ║
 ║   ✔ caam 0.2.0                                                ║
+║   ✔ dcg 0.1.0                                                 ║
+║   ✔ ru 1.2.0                                                  ║
 ║   ⚠ mcp_agent_mail (not running)                              ║
+║                                                               ║
+║ Utilities                                                     ║
+║   ✔ giil 3.0.0                                                ║
+║   ✔ csctf 1.0.0                                               ║
 ╠══════════════════════════════════════════════════════════════╣
-║ Overall: 31/32 checks passed                                  ║
+║ Overall: 35/36 checks passed                                  ║
 ╚══════════════════════════════════════════════════════════════╝
 ```
 
@@ -1815,6 +1832,233 @@ mcp.macro_prepare_thread(...)     # Align with existing thread
 mcp.macro_file_reservation_cycle(...)  # Reserve + work + release
 mcp.macro_contact_handshake(...)  # Request contact permissions
 ```
+
+---
+
+## Destructive Command Guard (dcg)
+
+**dcg** is a high-performance Claude Code hook that blocks dangerous git and filesystem commands before they execute. It replaces the simpler Python-based guard with a Rust implementation optimized for sub-millisecond latency.
+
+### Why dcg Exists
+
+On December 17, 2025, an AI agent ran `git checkout --` on files containing hours of uncommitted work from a parallel coding session. The files were recovered via `git fsck --lost-found`, but the incident made one thing clear: instructions in `AGENTS.md` don't prevent execution. **dcg provides mechanical enforcement**.
+
+### What Gets Blocked
+
+| Category | Commands |
+|----------|----------|
+| **Git Reset** | `git reset --hard`, `git reset --merge` |
+| **File Discard** | `git checkout -- <files>`, `git restore <files>` |
+| **Force Push** | `git push --force` / `-f` (allows `--force-with-lease`) |
+| **Clean** | `git clean -f` (allows `-n` dry-run) |
+| **Branch Delete** | `git branch -D` (allows `-d`) |
+| **Stash Loss** | `git stash drop`, `git stash clear` |
+| **Filesystem** | `rm -rf` (except temp directories) |
+
+### What Gets Allowed
+
+Safe variants are allowlisted:
+- `git checkout -b <branch>` — Creates branch, doesn't touch files
+- `git restore --staged` — Only unstages, doesn't discard
+- `git clean -n` — Dry-run preview
+- `rm -rf /tmp/...` — Temp directories are ephemeral
+
+### Installation
+
+```bash
+curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/destructive_command_guard/master/install.sh?$(date +%s)" | bash
+```
+
+### Claude Code Configuration
+
+Add to `~/.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{"type": "command", "command": "dcg"}]
+      }
+    ]
+  }
+}
+```
+
+### Modular Pack System
+
+dcg uses a modular pack system for extensibility. Enable additional packs in `~/.config/dcg/config.toml`:
+
+```toml
+[packs]
+enabled = [
+    "database.postgresql",
+    "containers.docker",
+    "kubernetes",
+]
+```
+
+Available packs: `database.*`, `containers.*`, `kubernetes.*`, `cloud.*`, `infrastructure.*`, `system.*`, `package_managers`.
+
+---
+
+## Repo Updater (ru)
+
+**ru** is a production-grade CLI tool for synchronizing collections of GitHub repositories and automating commit workflows across dirty repos with AI assistance.
+
+### Core Features
+
+- **Multi-repo sync**: Clone missing repos, pull updates, detect conflicts
+- **Agent sweep**: AI-driven commit automation across repositories with uncommitted changes
+- **AI code review**: Orchestrate Claude Code review sessions for open issues/PRs
+- **Work-stealing queue**: Parallel execution with load-balanced workers
+- **NTM integration**: Session management via Named Tmux Manager
+
+### Quick Start
+
+```bash
+# Install
+curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/repo_updater/main/install.sh?ru_cb=$(date +%s)" | bash
+
+# Initialize configuration
+ru init --example
+
+# Sync all repositories
+ru sync
+
+# Check status without changes
+ru status
+```
+
+### Agent Sweep Workflow
+
+The `agent-sweep` command automates commits across dirty repositories:
+
+```bash
+# Preview repos to process
+ru agent-sweep --dry-run
+
+# Full automation with AI
+ru agent-sweep --parallel 4
+
+# Include release automation
+ru agent-sweep --with-release
+```
+
+**Three-Phase Workflow:**
+1. **Planning**: Claude Code analyzes changes, generates commit message
+2. **Commit**: Validates plan, stages files, runs quality gates
+3. **Release**: (Optional) Creates version tag and GitHub release
+
+### Configuration
+
+```bash
+# ~/.config/ru/config
+PROJECTS_DIR=/data/projects
+LAYOUT=flat                   # flat|owner-repo|full
+UPDATE_STRATEGY=ff-only       # ff-only|rebase|merge
+PARALLEL=4
+```
+
+**Repo list format** (`~/.config/ru/repos.d/public.txt`):
+```
+owner/repo
+owner/repo@develop            # Pin to branch
+owner/repo as custom-name     # Custom directory name
+```
+
+---
+
+## Get Image from Internet Link (giil)
+
+**giil** downloads full-resolution images from cloud photo shares to your terminal. Essential for remote debugging workflows where you need to analyze screenshots in SSH sessions.
+
+### Supported Platforms
+
+| Platform | Method | Speed |
+|----------|--------|-------|
+| **iCloud** | 4-tier capture strategy | 5-15s |
+| **Dropbox** | Direct curl download | 1-2s |
+| **Google Photos** | Network interception | 5-15s |
+| **Google Drive** | Multi-tier with auth detection | 5-15s |
+
+### Usage
+
+```bash
+# Basic download
+giil "https://share.icloud.com/photos/02cD9okNHvVd-uuDnPCH3ZEEA"
+# Output: /current/dir/icloud_20240115_143245.jpg
+
+# Download to specific directory
+giil "..." --output ~/Downloads
+
+# Get JSON metadata
+giil "..." --json
+
+# Download all photos from album
+giil "..." --all --output ~/album
+```
+
+### Installation
+
+```bash
+curl -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/giil/main/install.sh?v=3.0.0" | bash
+```
+
+### Visual Debugging Workflow
+
+1. Screenshot UI bug on iPhone
+2. Wait for iCloud sync to Mac
+3. Share via Photos.app → Copy iCloud Link
+4. Paste link into remote terminal running Claude Code
+5. `giil` fetches the image locally
+6. AI assistant analyzes the screenshot
+
+---
+
+## Chat Shared Conversation to File (csctf)
+
+**csctf** converts public AI conversation share links into clean, searchable Markdown and HTML transcripts. Perfect for archiving AI conversations, building knowledge bases, and sharing with teams.
+
+### Supported Providers
+
+| Provider | URL Pattern |
+|----------|------------|
+| **ChatGPT** | `chatgpt.com/share/*` |
+| **Gemini** | `gemini.google.com/share/*` |
+| **Grok** | `grok.com/share/*` |
+| **Claude** | `claude.ai/share/*` |
+
+### Usage
+
+```bash
+# Basic conversion
+csctf https://chatgpt.com/share/69343092-91ac-800b-996c-7552461b9b70
+# Creates: <slug>.md and <slug>.html
+
+# Markdown only
+csctf "..." --md-only
+
+# Publish to GitHub Pages
+csctf "..." --publish-to-gh-pages --yes
+
+# JSON metadata output
+csctf "..." --json
+```
+
+### Installation
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/chat_shared_conversation_to_file/main/install.sh | bash
+```
+
+### Output Features
+
+- **Markdown**: Clean formatting with preserved code blocks and language hints
+- **HTML**: Zero-JavaScript static page with syntax highlighting
+- **Deterministic filenames**: `<slug>_YYYYMMDD.md` for reliable archival
+- **Collision handling**: Auto-increments suffix to avoid overwrites
 
 ---
 
@@ -2556,7 +2800,7 @@ scripts/generated/
 ├── install_agents.sh      # claude, codex, gemini
 ├── install_db.sh          # PostgreSQL 18, Vault
 ├── install_cloud.sh       # wrangler, supabase, vercel
-├── install_stack.sh       # Dicklesworthstone 8-tool stack
+├── install_stack.sh       # Dicklesworthstone 10-tool stack + utilities
 ├── install_acfs.sh        # ACFS config deployment
 ├── install_all.sh         # Orchestration helper
 ├── doctor_checks.sh       # Health verification
@@ -3444,7 +3688,7 @@ ACFS is optimal when you need:
 
 ## The Dicklesworthstone Stack Philosophy
 
-The 8-tool stack included in ACFS isn't random—each tool addresses a specific problem discovered through extensive multi-agent development experience.
+The 10-tool stack included in ACFS isn't random—each tool addresses a specific problem discovered through extensive multi-agent development experience.
 
 ### The Problems
 
@@ -3453,11 +3697,13 @@ Running multiple AI coding agents simultaneously surfaces problems that don't ex
 1. **Session chaos**: Agents in random terminal windows, no organization
 2. **File conflicts**: Two agents editing the same file simultaneously
 3. **No communication**: Agents can't coordinate or share findings
-4. **Dangerous commands**: Agents running `rm -rf` without oversight
+4. **Dangerous commands**: Agents running `git reset --hard` or `rm -rf` without oversight
 5. **Lost context**: No memory of what agents learned previously
 6. **Auth switching**: Different projects need different credentials
 7. **History fragmentation**: Agent conversations scattered across systems
 8. **No task visibility**: Hard to see what agents are working on
+9. **Repo sprawl**: Dozens of repos, hard to keep synced, uncommitted work everywhere
+10. **Visual debugging gaps**: Screenshots on phone, can't view in SSH terminal
 
 ### The Solutions
 
@@ -3473,6 +3719,15 @@ Each tool in the stack addresses specific problems:
 | 6 | **CM** | Lost context | Procedural memory for agents |
 | 7 | **CAAM** | Auth switching | One command to switch identities |
 | 8 | **SLB** | Dangerous commands | Two-person rule for nuclear options |
+| 9 | **DCG** | Dangerous git/fs commands | Sub-millisecond Claude Code hook blocks destructive operations |
+| 10 | **RU** | Repo sprawl | Sync repos + AI-driven commit automation across dirty repos |
+
+**Bundled Utilities:**
+
+| Tool | Problem Solved | Philosophy |
+|------|----------------|------------|
+| **giil** | Visual debugging gaps | Download cloud images (iCloud, Dropbox, Google Photos) to terminal |
+| **csctf** | Knowledge capture | Convert AI chat shares to searchable Markdown/HTML archives |
 
 ### The Synergy Effect
 
@@ -3480,10 +3735,11 @@ These tools are designed to work together:
 
 ```
 NTM spawns agents → Agents register with Agent Mail →
-Agent Mail reserves files → UBS validates operations →
-Beads tracks tasks → CASS searches history →
-CM provides memory → CAAM manages auth →
-SLB gates dangerous operations
+Agent Mail reserves files → DCG blocks dangerous commands →
+UBS validates operations → Beads tracks tasks →
+CASS searches history → CM provides memory →
+CAAM manages auth → SLB gates nuclear operations →
+RU syncs repos and automates commits
 ```
 
 No single tool is transformative alone. Together, they enable workflows that would otherwise be impossible:

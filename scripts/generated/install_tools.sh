@@ -93,7 +93,7 @@ acfs_security_init() {
 }
 
 # Category: tools
-# Modules: 4
+# Modules: 6
 
 # Atuin shell history (Ctrl-R superpowers)
 install_tools_atuin() {
@@ -348,6 +348,182 @@ INSTALL_TOOLS_VAULT
     log_success "tools.vault installed"
 }
 
+# Get Image from Internet Link - download cloud images for visual debugging
+install_utils_giil() {
+    local module_id="utils.giil"
+    acfs_require_contract "module:${module_id}" || return 1
+    log_step "Installing utils.giil"
+
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: verified installer: utils.giil"
+    else
+        if ! {
+            # Try security-verified install (no unverified fallback; fail closed)
+            local install_success=false
+
+            if acfs_security_init; then
+                # Check if KNOWN_INSTALLERS is available as an associative array (declare -A)
+                # The grep ensures we specifically have an associative array, not just any variable
+                if declare -p KNOWN_INSTALLERS 2>/dev/null | grep -q 'declare -A'; then
+                    local tool="giil"
+                    local url=""
+                    local expected_sha256=""
+
+                    # Safe access with explicit empty default
+                    url="${KNOWN_INSTALLERS[$tool]:-}"
+                    if ! expected_sha256="$(get_checksum "$tool")"; then
+                        log_error "utils.giil: get_checksum failed for tool '$tool'"
+                        expected_sha256=""
+                    fi
+
+                    if [[ -n "$url" ]] && [[ -n "$expected_sha256" ]]; then
+                        if verify_checksum "$url" "$expected_sha256" "$tool" | run_as_target_runner 'bash' '-s'; then
+                            install_success=true
+                        else
+                            log_error "utils.giil: verify_checksum or installer execution failed"
+                        fi
+                    else
+                        if [[ -z "$url" ]]; then
+                            log_error "utils.giil: KNOWN_INSTALLERS[$tool] not found"
+                        fi
+                        if [[ -z "$expected_sha256" ]]; then
+                            log_error "utils.giil: checksum for '$tool' not found"
+                        fi
+                    fi
+                else
+                    log_error "utils.giil: KNOWN_INSTALLERS array not available"
+                fi
+            else
+                log_error "utils.giil: acfs_security_init failed - check security.sh and checksums.yaml"
+            fi
+
+            # No unverified fallback: verified install is required
+            if [[ "$install_success" = "true" ]]; then
+                true
+            else
+                log_error "Verified install failed for utils.giil"
+                false
+            fi
+        }; then
+            log_warn "utils.giil: verified installer failed"
+            if type -t record_skipped_tool >/dev/null 2>&1; then
+              record_skipped_tool "utils.giil" "verified installer failed"
+            elif type -t state_tool_skip >/dev/null 2>&1; then
+              state_tool_skip "utils.giil"
+            fi
+            return 0
+        fi
+    fi
+
+    # Verify
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: verify: giil --help || giil --version (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_UTILS_GIIL'
+giil --help || giil --version
+INSTALL_UTILS_GIIL
+        then
+            log_warn "utils.giil: verify failed: giil --help || giil --version"
+            if type -t record_skipped_tool >/dev/null 2>&1; then
+              record_skipped_tool "utils.giil" "verify failed: giil --help || giil --version"
+            elif type -t state_tool_skip >/dev/null 2>&1; then
+              state_tool_skip "utils.giil"
+            fi
+            return 0
+        fi
+    fi
+
+    log_success "utils.giil installed"
+}
+
+# Chat Shared Conversation to File - convert AI share links to Markdown/HTML
+install_utils_csctf() {
+    local module_id="utils.csctf"
+    acfs_require_contract "module:${module_id}" || return 1
+    log_step "Installing utils.csctf"
+
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: verified installer: utils.csctf"
+    else
+        if ! {
+            # Try security-verified install (no unverified fallback; fail closed)
+            local install_success=false
+
+            if acfs_security_init; then
+                # Check if KNOWN_INSTALLERS is available as an associative array (declare -A)
+                # The grep ensures we specifically have an associative array, not just any variable
+                if declare -p KNOWN_INSTALLERS 2>/dev/null | grep -q 'declare -A'; then
+                    local tool="csctf"
+                    local url=""
+                    local expected_sha256=""
+
+                    # Safe access with explicit empty default
+                    url="${KNOWN_INSTALLERS[$tool]:-}"
+                    if ! expected_sha256="$(get_checksum "$tool")"; then
+                        log_error "utils.csctf: get_checksum failed for tool '$tool'"
+                        expected_sha256=""
+                    fi
+
+                    if [[ -n "$url" ]] && [[ -n "$expected_sha256" ]]; then
+                        if verify_checksum "$url" "$expected_sha256" "$tool" | run_as_target_runner 'bash' '-s'; then
+                            install_success=true
+                        else
+                            log_error "utils.csctf: verify_checksum or installer execution failed"
+                        fi
+                    else
+                        if [[ -z "$url" ]]; then
+                            log_error "utils.csctf: KNOWN_INSTALLERS[$tool] not found"
+                        fi
+                        if [[ -z "$expected_sha256" ]]; then
+                            log_error "utils.csctf: checksum for '$tool' not found"
+                        fi
+                    fi
+                else
+                    log_error "utils.csctf: KNOWN_INSTALLERS array not available"
+                fi
+            else
+                log_error "utils.csctf: acfs_security_init failed - check security.sh and checksums.yaml"
+            fi
+
+            # No unverified fallback: verified install is required
+            if [[ "$install_success" = "true" ]]; then
+                true
+            else
+                log_error "Verified install failed for utils.csctf"
+                false
+            fi
+        }; then
+            log_warn "utils.csctf: verified installer failed"
+            if type -t record_skipped_tool >/dev/null 2>&1; then
+              record_skipped_tool "utils.csctf" "verified installer failed"
+            elif type -t state_tool_skip >/dev/null 2>&1; then
+              state_tool_skip "utils.csctf"
+            fi
+            return 0
+        fi
+    fi
+
+    # Verify
+    if [[ "${DRY_RUN:-false}" = "true" ]]; then
+        log_info "dry-run: verify: csctf --help || csctf --version (target_user)"
+    else
+        if ! run_as_target_shell <<'INSTALL_UTILS_CSCTF'
+csctf --help || csctf --version
+INSTALL_UTILS_CSCTF
+        then
+            log_warn "utils.csctf: verify failed: csctf --help || csctf --version"
+            if type -t record_skipped_tool >/dev/null 2>&1; then
+              record_skipped_tool "utils.csctf" "verify failed: csctf --help || csctf --version"
+            elif type -t state_tool_skip >/dev/null 2>&1; then
+              state_tool_skip "utils.csctf"
+            fi
+            return 0
+        fi
+    fi
+
+    log_success "utils.csctf installed"
+}
+
 # Install all tools modules
 install_tools() {
     log_section "Installing tools modules"
@@ -355,6 +531,8 @@ install_tools() {
     install_tools_zoxide
     install_tools_ast_grep
     install_tools_vault
+    install_utils_giil
+    install_utils_csctf
 }
 
 # Run if executed directly

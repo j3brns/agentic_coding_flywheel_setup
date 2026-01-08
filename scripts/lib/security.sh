@@ -133,6 +133,10 @@ declare -gA KNOWN_INSTALLERS=(
     [cm]="https://raw.githubusercontent.com/Dicklesworthstone/cass_memory_system/main/install.sh"
     [caam]="https://raw.githubusercontent.com/Dicklesworthstone/coding_agent_account_manager/main/install.sh"
     [slb]="https://raw.githubusercontent.com/Dicklesworthstone/simultaneous_launch_button/main/scripts/install.sh"
+    [dcg]="https://raw.githubusercontent.com/Dicklesworthstone/destructive_command_guard/master/install.sh"
+    [ru]="https://raw.githubusercontent.com/Dicklesworthstone/repo_updater/main/install.sh"
+    [giil]="https://raw.githubusercontent.com/Dicklesworthstone/giil/main/install.sh"
+    [csctf]="https://raw.githubusercontent.com/Dicklesworthstone/chat_shared_conversation_to_file/main/install.sh"
 )
 
 # ============================================================

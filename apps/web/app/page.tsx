@@ -343,7 +343,7 @@ function FlywheelSection() {
             The <Jargon term="agentic">Agentic</Jargon> Coding <Jargon term="flywheel">Flywheel</Jargon>
           </h2>
           <p className="mx-auto max-w-2xl text-muted-foreground">
-            Eight interconnected tools that transform multi-<Jargon term="ai-agents">agent</Jargon> workflows.
+            Ten interconnected tools (plus utilities) that transform multi-<Jargon term="ai-agents">agent</Jargon> workflows.
             Each tool enhances the others.
           </p>
         </motion.div>

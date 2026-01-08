@@ -623,9 +623,9 @@ export const flywheelTools: FlywheelTool[] = [
 
 export const flywheelDescription = {
   title: "The Agentic Coding Flywheel",
-  subtitle: "Eight tools that create unheard-of velocity",
+  subtitle: "Ten tools plus utilities that create unheard-of velocity",
   description:
-    "A self-reinforcing system that enables multiple AI agents to work in parallel across 8+ projects, reviewing each other's work, creating and executing tasks, and making incredible autonomous progress while you're away.",
+    "A self-reinforcing system that enables multiple AI agents to work in parallel across 10+ projects, reviewing each other's work, creating and executing tasks, and making incredible autonomous progress while you're away.",
   philosophy: [
     {
       title: "Unix Philosophy",

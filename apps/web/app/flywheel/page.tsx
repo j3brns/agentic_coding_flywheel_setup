@@ -99,7 +99,7 @@ function HeroSection() {
           className="mt-6 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg lg:text-xl opacity-0 animate-slide-up"
           style={{ animationDelay: "0.3s", animationFillMode: "forwards" }}
         >
-          Eight interconnected tools that enable multiple AI agents to work in parallel,
+          Ten interconnected tools (plus utilities) that enable multiple AI agents to work in parallel,
           review each other&apos;s work, and make incredible autonomous progress,
           all <span className="text-foreground font-medium">while you&apos;re away</span>.
         </p>
@@ -630,10 +630,10 @@ function ToolsSection() {
             <div className="h-px w-8 bg-gradient-to-l from-transparent via-primary/50 to-transparent" />
           </div>
           <h2 className="font-mono text-2xl font-bold tracking-tight text-foreground sm:text-3xl lg:text-4xl">
-            All Eight Flywheel Tools
+            All Ten Flywheel Tools
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-base text-muted-foreground lg:text-lg">
-            Each tool installs in under 30 seconds. Written in Go, Rust, TypeScript, and Python.
+            Each tool installs in under 30 seconds. Written in Go, Rust, TypeScript, Python, and Bash.
           </p>
         </div>
 

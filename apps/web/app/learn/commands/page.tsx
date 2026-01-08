@@ -57,7 +57,7 @@ const CATEGORY_META: Array<{
   {
     id: "stack",
     name: "Dicklesworthstone Stack",
-    description: "The 8-tool orchestration stack (plus Beads)",
+    description: "The 10-tool orchestration stack (plus utilities)",
     icon: <Terminal className="h-5 w-5" />,
     gradient: "from-primary/20 to-blue-500/20",
   },

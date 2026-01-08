@@ -1039,6 +1039,92 @@ modules:
       # Need to source updated PATH for verification
       - export PATH="$HOME/go/bin:$PATH" && slb >/dev/null 2>&1 || slb --help >/dev/null 2>&1
 
+  - id: stack.dcg
+    description: Destructive Command Guard - Claude Code hook blocking dangerous git/fs commands
+    category: stack
+    phase: 9
+    run_as: target_user
+    optional: false
+    enabled_by_default: true
+    tags: [recommended, safety]
+    dependencies:
+      - agents.claude   # dcg is a Claude Code hook, only useful if Claude is installed
+    installed_check:
+      run_as: target_user
+      command: "command -v dcg"
+    verified_installer:
+      tool: dcg
+      runner: bash
+      args: ["--easy-mode"]
+    install: []
+    verify:
+      - dcg --version
+
+  - id: stack.ru
+    description: Repo Updater - multi-repo sync + AI-driven commit automation
+    category: stack
+    phase: 9
+    run_as: target_user
+    optional: false
+    enabled_by_default: true
+    tags: [recommended]
+    dependencies:
+      - cli.modern   # for gh, tmux
+      - stack.ntm    # for session management
+    installed_check:
+      run_as: target_user
+      command: "command -v ru"
+    verified_installer:
+      tool: ru
+      runner: bash
+      args: ["--easy-mode"]
+    install: []
+    verify:
+      - ru --version
+
+  # ============================================================
+  # PHASE 9B: Utilities (giil, csctf)
+  # ============================================================
+  - id: utils.giil
+    description: Get Image from Internet Link - download cloud images for visual debugging
+    category: tools
+    phase: 9
+    run_as: target_user
+    optional: true
+    enabled_by_default: true
+    tags: [utility]
+    dependencies:
+      - base.system   # giil installer auto-installs Node.js + Playwright if needed
+    installed_check:
+      run_as: target_user
+      command: "command -v giil"
+    verified_installer:
+      tool: giil
+      runner: bash
+    install: []
+    verify:
+      - giil --help || giil --version
+
+  - id: utils.csctf
+    description: Chat Shared Conversation to File - convert AI share links to Markdown/HTML
+    category: tools
+    phase: 9
+    run_as: target_user
+    optional: true
+    enabled_by_default: true
+    tags: [utility]
+    dependencies:
+      - base.system   # csctf provides prebuilt binaries; installer handles deps
+    installed_check:
+      run_as: target_user
+      command: "command -v csctf"
+    verified_installer:
+      tool: csctf
+      runner: bash
+    install: []
+    verify:
+      - csctf --help || csctf --version
+
   # ============================================================
   # PHASE 10: Finalization (onboard, doctor, verification)
   # ============================================================
