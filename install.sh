@@ -3637,10 +3637,6 @@ finalize() {
     log_detail "Installing acfs scripts"
     try_step "Creating ACFS scripts directory" $SUDO mkdir -p "$ACFS_HOME/scripts/lib" || return 1
     
-    # Install Claude hooks
-    try_step "Creating ACFS claude directory" $SUDO mkdir -p "$ACFS_HOME/claude/hooks" || return 1
-    try_step "Installing git_safety_guard.py" install_asset "acfs/claude/hooks/git_safety_guard.py" "$ACFS_HOME/claude/hooks/git_safety_guard.py" || return 1
-
     # Install script libraries
     try_step "Installing logging.sh" install_asset "scripts/lib/logging.sh" "$ACFS_HOME/scripts/lib/logging.sh" || return 1
     try_step "Installing gum_ui.sh" install_asset "scripts/lib/gum_ui.sh" "$ACFS_HOME/scripts/lib/gum_ui.sh" || return 1

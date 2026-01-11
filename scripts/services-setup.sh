@@ -766,266 +766,6 @@ It also supports optional protection packs (database, Kubernetes, cloud)."
     gum_success "DCG config written to $config_file"
 }
 
-setup_claude_git_guard() {
-    local settings_dir="$TARGET_HOME/.claude"
-    local hooks_dir="$settings_dir/hooks"
-    local guard_path_py="$hooks_dir/git_safety_guard.py"
-    local guard_path_sh="$hooks_dir/git_safety_guard.sh"
-    local settings_file="$settings_dir/settings.json"
-    local source_py="$TARGET_HOME/.acfs/claude/hooks/git_safety_guard.py"
-
-    if [[ "$SERVICES_SETUP_NONINTERACTIVE" != "true" ]] && { [[ -t 0 ]] || [[ -r /dev/tty ]]; }; then
-        gum_box "Claude Git Safety Guard" "This installs a Claude Code PreToolUse hook that blocks destructive git/filesystem commands before they run.
-
-It helps prevent accidental loss of uncommitted work from commands like:
-  • git checkout -- <files>
-  • git restore <files>
-  • git reset --hard
-  • git clean -f
-  • git push --force / -f
-  • rm -rf (except temp dirs)
-  • git stash drop/clear
-
-Recommended if you run Claude in dangerous mode (ACFS vibe aliases).
-
-Press Enter to install the guard..."
-
-        if [[ -r /dev/tty ]]; then
-            read -r < /dev/tty || true
-        else
-            read -r || true
-        fi
-    else
-        gum_detail "Installing Claude Git Safety Guard (noninteractive)"
-    fi
-
-    # Safety: refuse to follow symlinks under ~/.claude.
-    # This prevents writing outside $TARGET_HOME when invoked as root.
-    if [[ -L "$settings_dir" ]]; then
-        gum_error "Refusing to operate: $settings_dir is a symlink"
-        return 1
-    fi
-    if [[ -e "$settings_dir" && ! -d "$settings_dir" ]]; then
-        gum_error "Refusing to operate: $settings_dir exists and is not a directory"
-        return 1
-    fi
-    if [[ -L "$hooks_dir" ]]; then
-        gum_error "Refusing to operate: $hooks_dir is a symlink"
-        return 1
-    fi
-    if [[ -e "$hooks_dir" && ! -d "$hooks_dir" ]]; then
-        gum_error "Refusing to operate: $hooks_dir exists and is not a directory"
-        return 1
-    fi
-    if [[ -L "$guard_path_py" || -L "$guard_path_sh" || -L "$settings_file" ]]; then
-        gum_error "Refusing to operate: one or more ~/.claude paths are symlinks"
-        return 1
-    fi
-
-    # If older runs left root-owned files, fix ownership before writing as $TARGET_USER.
-    if [[ "$(whoami)" == "root" ]]; then
-        chown -hR "$TARGET_USER:$TARGET_USER" "$settings_dir" 2>/dev/null || true
-    fi
-
-    run_as_user mkdir -p "$hooks_dir"
-
-    # Prefer Python implementation if available
-    local installed_guard="$guard_path_sh"
-    
-    if [[ -f "$source_py" ]] && command -v python3 &>/dev/null; then
-        gum_detail "Installing Python implementation..."
-        run_as_user cp -- "$source_py" "$guard_path_py"
-        run_as_user chmod +x "$guard_path_py"
-        installed_guard="$guard_path_py"
-    else
-        gum_detail "Installing Bash implementation (fallback)..."
-        cat << 'EOF' | run_as_user tee "$guard_path_sh" >/dev/null
-#!/usr/bin/env bash
-#
-# git_safety_guard.sh
-# Claude Code PreToolUse hook: blocks destructive git/filesystem commands.
-#
-# Behavior:
-#   - Exit 0 with no output = allow
-#   - Exit 0 with JSON permissionDecision=deny = block
-#
-set -euo pipefail
-
-input="$(cat 2>/dev/null || true)"
-[[ -n "$input" ]] || exit 0
-
-tool_name="$(printf '%s' "$input" | jq -r '.tool_name // empty' 2>/dev/null || true)"
-command="$(printf '%s' "$input" | jq -r '.tool_input.command // empty' 2>/dev/null || true)"
-
-[[ "$tool_name" == "Bash" ]] || exit 0
-[[ -n "$command" ]] || exit 0
-
-SAFE_PATTERNS=(
-  'git[[:space:]]+checkout[[:space:]]+-b[[:space:]]+'
-  'git[[:space:]]+checkout[[:space:]]+--orphan[[:space:]]+'
-  'git[[:space:]]+restore[[:space:]]+--staged[[:space:]]+'
-  'git[[:space:]]+clean[[:space:]]+-n([[:space:]]|$)'
-  'git[[:space:]]+clean[[:space:]]+--dry-run([[:space:]]|$)'
-  # Allow rm -rf on temp directories (ephemeral by design)
-  'rm[[:space:]]+-[a-z]*r[a-z]*f[a-z]*([[:space:]]+--)?[[:space:]]+/tmp/'
-  'rm[[:space:]]+-[a-z]*r[a-z]*f[a-z]*([[:space:]]+--)?[[:space:]]+\"/tmp/'
-  'rm[[:space:]]+-[a-z]*r[a-z]*f[a-z]*([[:space:]]+--)?[[:space:]]+/var/tmp/'
-  'rm[[:space:]]+-[a-z]*r[a-z]*f[a-z]*([[:space:]]+--)?[[:space:]]+\"/var/tmp/'
-)
-
-for pat in "${SAFE_PATTERNS[@]}"; do
-  if printf '%s' "$command" | grep -Eiq -- "$pat"; then
-    exit 0
-  fi
-done
-
-deny() {
-  local reason="$1"
-  jq -n --arg reason "$reason" --arg cmd "$command" '{
-    hookSpecificOutput: {
-      hookEventName: "PreToolUse",
-      permissionDecision: "deny",
-      permissionDecisionReason: ("BLOCKED by git_safety_guard.sh\n\nReason: " + $reason + "\n\nCommand: " + $cmd + "\n\nIf this operation is truly needed, ask the user for explicit permission and have them run the command manually.")
-    }
-  }'
-  exit 0
-}
-
-# git checkout -- / git checkout <ref> -- <path>
-if printf '%s' "$command" | grep -Eiq -- 'git[[:space:]]+checkout[[:space:]]+.*--[[:space:]]+'; then
-  deny "git checkout ... -- can overwrite/discard uncommitted changes. Use 'git stash' first."
-fi
-
-# git restore (except --staged)
-if printf '%s' "$command" | grep -Eiq -- 'git[[:space:]]+restore([[:space:]]|$)'; then
-  deny "git restore can discard uncommitted changes. Use 'git diff' and 'git stash' first."
-fi
-
-# git reset hard/merge
-if printf '%s' "$command" | grep -Eiq -- 'git[[:space:]]+reset[[:space:]]+--hard([[:space:]]|$)'; then
-  deny "git reset --hard destroys uncommitted changes. Use 'git stash' first."
-fi
-if printf '%s' "$command" | grep -Eiq -- 'git[[:space:]]+reset[[:space:]]+--merge([[:space:]]|$)'; then
-  deny "git reset --merge can lose uncommitted changes."
-fi
-
-# git clean -f / -fd / etc (except -n / --dry-run handled above)
-if printf '%s' "$command" | grep -Eiq -- 'git[[:space:]]+clean[[:space:]]+-[a-z]*f'; then
-  deny "git clean -f removes untracked files permanently. Review with 'git clean -n' first."
-fi
-
-# force push
-if printf '%s' "$command" | grep -Eiq -- 'git[[:space:]]+push([[:space:]]|$)'; then
-  if printf '%s' "$command" | grep -Eiq -- '--force-with-lease'; then
-    exit 0
-  fi
-  if printf '%s' "$command" | grep -Eiq -- '(^|[[:space:]])(--force|-f)([[:space:]]|$)'; then
-    deny "Force push can destroy remote history. Prefer --force-with-lease if absolutely necessary."
-  fi
-fi
-
-# branch delete
-if printf '%s' "$command" | grep -Eiq -- 'git[[:space:]]+branch[[:space:]]+-D([[:space:]]|$)'; then
-  deny "git branch -D force-deletes without merge check. Use -d for safety."
-fi
-
-# git stash drop/clear
-if printf '%s' "$command" | grep -Eiq -- 'git[[:space:]]+stash[[:space:]]+drop([[:space:]]|$)'; then
-  deny "git stash drop permanently deletes stashed changes. List stashes first."
-fi
-if printf '%s' "$command" | grep -Eiq -- 'git[[:space:]]+stash[[:space:]]+clear([[:space:]]|$)'; then
-  deny "git stash clear permanently deletes ALL stashed changes."
-fi
-
-# rm -rf (except temp dirs handled above)
-if printf '%s' "$command" | grep -Eiq -- '(^|[[:space:]])rm[[:space:]]+-[a-z]*r[a-z]*f[a-z]*([[:space:]]|$)'; then
-  if printf '%s' "$command" | grep -Eiq -- 'rm[[:space:]]+-[a-z]*r[a-z]*f[a-z]*[[:space:]]+[/~]([[:space:]]|$)'; then
-    deny "rm -rf on root/home paths is extremely dangerous."
-  fi
-  deny "rm -rf is destructive. List files first, then delete individually with explicit permission."
-fi
-
-exit 0
-EOF
-        run_as_user chmod +x "$guard_path_sh"
-    fi
-
-    # Create or merge settings.json
-    if [[ ! -f "$settings_file" ]]; then
-        run_as_user tee "$settings_file" >/dev/null <<EOF
-{
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          { "type": "command", "command": "$installed_guard" }
-        ]
-      }
-    ]
-  }
-}
-EOF
-    else
-        local tmp
-        if command -v jq &>/dev/null; then
-            # Create temp file in the same directory for atomic replacement (cross-device mv can fail).
-            tmp="$(run_as_user mktemp "${settings_dir}/.acfs_services.XXXXXX" 2>/dev/null || true)"
-            if [[ -z "$tmp" ]]; then
-                gum_warn "Could not update $settings_file automatically (mktemp failed)"
-                gum_detail "Manually add this hook command:"
-                gum_detail "  $installed_guard"
-            else
-                local jq_program
-                jq_program="$(cat <<'JQ'
-.hooks = (.hooks // {}) |
-.hooks.PreToolUse = (.hooks.PreToolUse // []) |
-if (.hooks.PreToolUse | type) != "array" then
-  .hooks.PreToolUse = []
-else .
-end |
-if ( [ .hooks.PreToolUse[]? | .hooks[]? | select(.type=="command") | .command ] | index($cmd) ) != null then
-  .
-else
-  ( [ .hooks.PreToolUse | to_entries[] | select(.value.matcher=="Bash") | (.key | tonumber) ] | first ) as $bashKey |
-  if $bashKey == null then
-    .hooks.PreToolUse += [{ "matcher":"Bash", "hooks":[ { "type":"command", "command":$cmd } ] }]
-  else
-    .hooks.PreToolUse[$bashKey].hooks = ((.hooks.PreToolUse[$bashKey].hooks // []) | if type=="array" then . else [] end) |
-    .hooks.PreToolUse[$bashKey].hooks += [{ "type":"command", "command":$cmd }]
-  end
-end
-JQ
-)"
-                if run_as_user jq --arg cmd "$installed_guard" "$jq_program" "$settings_file" 2>/dev/null | run_as_user tee "$tmp" >/dev/null; then
-                    run_as_user mv -- "$tmp" "$settings_file" 2>/dev/null || {
-                        run_as_user rm -f -- "$tmp" 2>/dev/null || true
-                        gum_warn "Could not update $settings_file automatically (mv failed)"
-                        gum_detail "Manually add this hook command:"
-                        gum_detail "  $installed_guard"
-                    }
-                else
-                    run_as_user rm -f -- "$tmp" 2>/dev/null || true
-                    gum_warn "Could not update $settings_file automatically (invalid JSON?)"
-                    gum_detail "Manually add this hook command:"
-                    gum_detail "  $installed_guard"
-                fi
-            fi
-        else
-            gum_warn "jq not found; cannot update $settings_file automatically"
-            gum_detail "Manually add this hook command:"
-            gum_detail "  $installed_guard"
-        fi
-    fi
-
-    # Ensure ownership if run via sudo/root
-    if [[ "$(whoami)" == "root" ]]; then
-        chown -hR "$TARGET_USER:$TARGET_USER" "$settings_dir" 2>/dev/null || true
-    fi
-
-    gum_success "Installed Claude Git Safety Guard"
-    gum_warn "Restart Claude Code for hooks to take effect"
-}
 
 print_cli_help() {
     cat << 'EOF'
@@ -1034,21 +774,18 @@ ACFS services-setup
 Interactive:
   acfs services-setup
 
-Noninteractive actions:
-  services-setup.sh --install-claude-guard --yes
+Options:
+  --yes, -y    Non-interactive mode
+  --help, -h   Show this help
 EOF
 }
 
 maybe_run_cli_action() {
     local arg
-    local install_claude_guard="false"
 
     while [[ $# -gt 0 ]]; do
         arg="$1"
         case "$arg" in
-            --install-claude-guard)
-                install_claude_guard="true"
-                ;;
             --yes|-y)
                 SERVICES_SETUP_NONINTERACTIVE="true"
                 ;;
@@ -1063,12 +800,6 @@ maybe_run_cli_action() {
 
     if [[ "${SERVICES_SETUP_ACTION:-}" == "help" ]]; then
         print_cli_help
-        return 0
-    fi
-
-    if [[ "$install_claude_guard" == "true" ]]; then
-        init_target_context || return 1
-        setup_claude_git_guard
         return 0
     fi
 
@@ -1259,7 +990,6 @@ show_menu() {
         done
 
         items+=("─────────────────────────────────────────")
-        items+=("🛡 Install Claude destructive-command guard (recommended)")
         items+=("⚡ Configure ALL unconfigured services")
         items+=("🔄 Refresh status")
         items+=("👋 Exit")
@@ -1275,7 +1005,6 @@ show_menu() {
             --height 12)
 
         case "$choice" in
-            *"destructive-command guard"*) setup_claude_git_guard ;;
             *"Claude"*)    setup_claude ;;
             *"Codex"*)     setup_codex ;;
             *"Gemini"*)    setup_gemini ;;
@@ -1300,13 +1029,11 @@ show_menu() {
             "6. Supabase (database platform)" \
             "7. Cloudflare Wrangler (edge platform)" \
             "8. PostgreSQL (check database)" \
-            "9. Install Claude destructive-command guard (recommended)" \
-            "10. Configure ALL unconfigured services" \
-            "11. Refresh status" \
+            "9. Configure ALL unconfigured services" \
+            "10. Refresh status" \
             "0. Exit")
 
         case "$choice" in
-            *"destructive-command guard"*) setup_claude_git_guard ;;
             *"Claude"*)    setup_claude ;;
             *"Codex"*)     setup_codex ;;
             *"Gemini"*)    setup_gemini ;;
