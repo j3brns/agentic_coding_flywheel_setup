@@ -3504,7 +3504,7 @@ gemini  # Follow Google login flow
 
 ### Stack Tools Not Working
 
-**Symptom**: `ntm`, `slb`, etc. not found or erroring.
+**Symptom**: `ntm`, `slb`, `dcg`, etc. not found or erroring.
 
 **Solutions**:
 
@@ -3515,12 +3515,39 @@ gemini  # Follow Google login flow
 
 2. **Check cargo install worked**:
    ```bash
-   ls ~/.cargo/bin/  # Should contain ntm, slb, etc.
+   ls ~/.cargo/bin/  # Should contain ntm, slb, ru, etc.
+   ls ~/.local/bin/  # dcg often installs here
    ```
 
 3. **Rust not in path**:
    ```bash
    source ~/.cargo/env
+   ```
+
+### DCG Hook Issues
+
+**Symptom**: DCG isn't blocking commands or Claude reports hook errors.
+
+**Solutions**:
+
+1. **Run the built-in health check**:
+   ```bash
+   dcg doctor
+   ```
+
+2. **Re-register the hook**:
+   ```bash
+   dcg install --force
+   ```
+
+3. **Verify hook registration**:
+   ```bash
+   grep -n dcg ~/.claude/settings.json ~/.config/claude/settings.json
+   ```
+
+4. **Reinstall if binary is missing**:
+   ```bash
+   which dcg  # Should return a path
    ```
 
 ### Complete Reset
@@ -4002,6 +4029,8 @@ MIT License. See [LICENSE](LICENSE) for details.
   - [beads_viewer](https://github.com/Dicklesworthstone/beads_viewer) - Task management TUI
   - [mcp_agent_mail](https://github.com/Dicklesworthstone/mcp_agent_mail) - Agent coordination
   - [cass](https://github.com/Dicklesworthstone/coding_agent_session_search) - Agent session search
+  - [dcg](https://github.com/Dicklesworthstone/destructive_command_guard) - Destructive Command Guard
+  - [ru](https://github.com/Dicklesworthstone/repo_updater) - Repo Updater
 
 ---
 
