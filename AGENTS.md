@@ -741,11 +741,12 @@ git push --force-with-lease    # Safe force push variant
 
 **Configuration:**
 - Config file: `~/.config/dcg/config.toml`
-- Pack categories: `database.*`, `containers.*`, `kubernetes.*`, `cloud.*`, `infrastructure.*`, `system.*`, `package_managers`
+- View available packs: `dcg packs` (shows all), `dcg packs --enabled` (shows active)
+- Pack examples: `git`, `filesystem`, `database.postgresql`, `containers.docker`, `kubernetes`
 ```toml
 # ~/.config/dcg/config.toml
 [packs]
-enabled = ["database.postgresql", "containers.docker", "kubernetes"]
+enabled = ["git", "filesystem", "database.postgresql", "containers.docker"]
 ```
 - Allowlist management: `dcg allow <rule-id> --reason "..." --project <path>` (or `--user`)
 

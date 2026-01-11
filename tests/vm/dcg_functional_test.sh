@@ -19,13 +19,9 @@ detail() { [[ "$VERBOSE" == "--verbose" ]] && echo "  -> $*" >&2 || true; }
 # HOOK SIMULATION
 # ============================================================
 
-# Simulate how Claude Code invokes the PreToolUse hook
-simulate_hook_call() {
+build_hook_input() {
     local command="$1"
-    local hook_input
-
-    # Build JSON input matching Claude Code hook protocol
-    hook_input=$(cat <<EOF
+    cat <<EOF
 {
     "tool_name": "Bash",
     "tool_input": {
@@ -33,8 +29,25 @@ simulate_hook_call() {
     }
 }
 EOF
-)
+}
 
+get_hook_output() {
+    local command="$1"
+    local hook_input
+    hook_input=$(build_hook_input "$command")
+    detail "Hook input: $hook_input"
+    echo "$hook_input" | dcg 2>/dev/null || true
+}
+
+is_deny_output() {
+    echo "$1" | grep -Eqi '"permissionDecision"[[:space:]]*:[[:space:]]*"deny"'
+}
+
+# Simulate how Claude Code invokes the PreToolUse hook
+simulate_hook_call() {
+    local command="$1"
+    local hook_input
+    hook_input=$(build_hook_input "$command")
     detail "Hook input: $hook_input"
 
     # Call DCG as Claude Code would (stdin JSON, check stdout)
@@ -46,7 +59,7 @@ EOF
     detail "Exit code: $exit_code"
 
     # Check if command was denied
-    if echo "$hook_output" | grep -q '"permissionDecision":"deny"'; then
+    if is_deny_output "$hook_output"; then
         echo "DENIED"
         return 0
     elif [[ -z "$hook_output" ]] && [[ $exit_code -eq 0 ]]; then
@@ -73,6 +86,49 @@ test_hook_blocks_git_reset_hard() {
         fail "git reset --hard was NOT blocked (result: $result)"
         return 1
     fi
+}
+
+assert_deny_message_quality() {
+    local message="$1"
+
+    if ! echo "$message" | grep -Eqi "reason|why"; then
+        fail "Denial message missing reason. Message: $message"
+        return 1
+    fi
+
+    if ! echo "$message" | grep -Eqi "(safer|prefer|instead|alternative|(^|[[:space:]])use([[:space:]]|$))"; then
+        fail "Denial message missing safer alternative. Message: $message"
+        return 1
+    fi
+
+    return 0
+}
+
+test_deny_message_quality() {
+    log "Testing denial message quality for blocked commands"
+
+    if ! command -v jq >/dev/null 2>&1; then
+        fail "jq is required to validate denial message quality"
+        return 1
+    fi
+
+    local hook_output
+    hook_output=$(get_hook_output "git reset --hard HEAD")
+
+    if ! is_deny_output "$hook_output"; then
+        fail "Expected denial output for git reset --hard. Output: $hook_output"
+        return 1
+    fi
+
+    local reason
+    reason=$(echo "$hook_output" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null)
+
+    if [[ -z "$reason" ]]; then
+        fail "Denial message missing permissionDecisionReason. Output: $hook_output"
+        return 1
+    fi
+
+    assert_deny_message_quality "$reason" && pass "Denial message includes reason and safer alternative"
 }
 
 test_hook_blocks_rm_rf() {
@@ -160,6 +216,7 @@ main() {
     # Dangerous commands that SHOULD be blocked
     echo ">> Testing dangerous commands (should be BLOCKED):"
     test_hook_blocks_git_reset_hard && passed=$((passed + 1)) || failed=$((failed + 1))
+    test_deny_message_quality && passed=$((passed + 1)) || failed=$((failed + 1))
     test_hook_blocks_rm_rf && passed=$((passed + 1)) || failed=$((failed + 1))
     test_hook_blocks_git_push_force && passed=$((passed + 1)) || failed=$((failed + 1))
     test_hook_blocks_git_clean_f && passed=$((passed + 1)) || failed=$((failed + 1))

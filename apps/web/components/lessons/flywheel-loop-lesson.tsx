@@ -227,7 +227,7 @@ ru agent-sweep --dry-run    # Preview AI commits`,
               subtitle: "Pre-Execution Guard",
               command: "dcg",
               icon: <ShieldAlert className="h-5 w-5" />,
-              gradient: "from-red-500/20 to-rose-500/20",
+              gradient: "from-rose-500/20 to-red-500/20",
               useCases: [
                 "Blocks dangerous commands before execution",
                 "Protects git, filesystem, and databases",
