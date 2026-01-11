@@ -2,12 +2,12 @@
 #
 # onboard - ACFS Interactive Onboarding TUI
 #
-# Teaches users the ACFS workflow through 9 interactive lessons.
+# Teaches users the ACFS workflow through 11 interactive lessons.
 # Uses gum for TUI elements with fallback to basic bash menus.
 #
 # Usage:
 #   onboard           # Launch interactive menu
-#   onboard N         # Jump to lesson N (1-9)
+#   onboard N         # Jump to lesson N (1-11)
 #   onboard reset     # Reset progress
 #   onboard status    # Show completion status
 #
@@ -35,7 +35,7 @@ for candidate in \
     fi
 done
 
-# Lesson titles (indexed 0-9)
+# Lesson titles (indexed 0-10)
 declare -a LESSON_TITLES=(
     "Welcome & Overview"
     "Linux Navigation"
@@ -47,9 +47,10 @@ declare -a LESSON_TITLES=(
     "The Flywheel Loop"
     "Keeping Updated"
     "RU: Multi-Repo Mastery"
+    "DCG: Destructive Command Guard"
 )
 
-# Lesson files (indexed 0-9)
+# Lesson files (indexed 0-10)
 declare -a LESSON_FILES=(
     "00_welcome.md"
     "01_linux_basics.md"
@@ -61,6 +62,7 @@ declare -a LESSON_FILES=(
     "07_flywheel_loop.md"
     "08_keeping_updated.md"
     "09_ru.md"
+    "10_dcg.md"
 )
 
 # Lesson summaries - key learning points for celebration screen (pipe-separated)
@@ -75,6 +77,7 @@ declare -gA LESSON_SUMMARIES=(
     [7]="The agentic development loop|Continuous improvement|Measuring productivity"
     [8]="Keeping tools updated|Staying current with AI agents|Community resources"
     [9]="Multi-repo sync with ru sync|AI-driven commits via agent-sweep|Parallel workflow automation"
+    [10]="DCG command safety|Protection packs|Allow-once workflow"
 )
 
 # Service definitions for authentication flow

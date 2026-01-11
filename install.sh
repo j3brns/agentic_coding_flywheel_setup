@@ -3605,6 +3605,8 @@ finalize() {
         "06_ntm_command_palette.md"
         "07_flywheel_loop.md"
         "08_keeping_updated.md"
+        "09_ru.md"
+        "10_dcg.md"
     )
     local lesson
     for lesson in "${lesson_files[@]}"; do

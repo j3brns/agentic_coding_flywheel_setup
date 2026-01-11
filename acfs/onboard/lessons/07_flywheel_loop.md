@@ -19,7 +19,7 @@ Each cycle makes the next one better.
 
 ---
 
-## The Eight Tools (And When To Use Them)
+## The Nine Tools (And When To Use Them)
 
 ### 1. NTM - Your Cockpit
 **Command:** `ntm`
@@ -99,7 +99,19 @@ caam status         # See current accounts
 caam activate claude backup-account
 ```
 
-### 8. SLB - Safety Guardrails
+### 8. DCG - Destructive Command Guard
+**Command:** `dcg`
+
+Use it to:
+- Block dangerous commands before they execute
+- Test risky commands with explanations
+- Add a safety net for agents in vibe mode
+
+```bash
+dcg test "git reset --hard" --explain
+```
+
+### 9. SLB - Safety Guardrails
 **Command:** `slb`
 
 Use it for:
