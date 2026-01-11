@@ -16,6 +16,7 @@ import {
   Sparkles,
   ArrowRight,
   CheckCircle2,
+  GitMerge,
 } from "lucide-react";
 import {
   Section,
@@ -197,6 +198,24 @@ caam activate claude backup-account`,
                 "Two-person rule for destructive operations",
                 "Optional safety layer",
               ],
+            }}
+          />
+
+          <ToolCard
+            {...{
+              number: 9,
+              name: "RU",
+              subtitle: "Multi-Repo Sync",
+              command: "ru",
+              icon: <GitMerge className="h-5 w-5" />,
+              gradient: "from-indigo-500/20 to-blue-500/20",
+              useCases: [
+                "Sync dozens of repos with one command",
+                "AI-driven commit automation",
+                "Parallel workflow management",
+              ],
+              example: `ru sync -j4                  # Parallel sync
+ru agent-sweep --dry-run    # Preview AI commits`,
             }}
           />
         </div>

@@ -39,6 +39,7 @@ import {
   BookOpen,
   Rocket,
   ChevronRight,
+  GitMerge,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -397,6 +398,7 @@ const FLYWHEEL_CYCLE = [
   { name: "CM", desc: "Remembers", color: "from-pink-400 to-fuchsia-500", icon: Brain },
   { name: "CASS", desc: "Searches", color: "from-cyan-400 to-sky-500", icon: Search },
   { name: "CAAM", desc: "Auth switch", color: "from-slate-400 to-zinc-500", icon: Users },
+  { name: "RU", desc: "Repo sync", color: "from-indigo-400 to-blue-500", icon: GitMerge },
 ];
 
 // Prompts

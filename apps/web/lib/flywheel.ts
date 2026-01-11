@@ -177,6 +177,64 @@ export const workflowScenarios: WorkflowScenario[] = [
     outcome: "Systematic, methodical bug discovery and correction",
     timeframe: "Continuous",
   },
+  {
+    id: "multi-repo-morning",
+    title: "Multi-Repo Morning Sync",
+    description: "Start your day with all repos synced, agents spawned, and ready to execute tasks across the fleet.",
+    steps: [
+      {
+        tool: "ru",
+        action: "Sync all repos: `ru sync -j4 --autostash`",
+        result: "20+ repos cloned/updated in under 2 minutes",
+      },
+      {
+        tool: "ru",
+        action: "Check status: `ru status --fetch`",
+        result: "See which repos have unpushed commits or conflicts",
+      },
+      {
+        tool: "ntm",
+        action: "Spawn agents into key repos: `ntm spawn proj1 --cc=2 proj2 --cc=2`",
+        result: "4 Claude agents ready across 2 projects",
+      },
+      {
+        tool: "bv",
+        action: "Each agent runs `bv --robot-triage` to find work",
+        result: "Agents autonomously select high-impact tasks",
+      },
+    ],
+    outcome: "Full fleet of repos synced and agents working before your first coffee is done",
+    timeframe: "< 10 minutes to full productivity",
+  },
+  {
+    id: "agent-sweep-bulk",
+    title: "Bulk AI Commit Automation",
+    description: "Use RU's Agent Sweep to intelligently commit dirty repos across your entire fleet with AI-generated commit messages.",
+    steps: [
+      {
+        tool: "ru",
+        action: "Preview sweep: `ru agent-sweep --dry-run`",
+        result: "See which repos have uncommitted changes",
+      },
+      {
+        tool: "ru",
+        action: "Run sweep: `ru agent-sweep --parallel 4`",
+        result: "AI analyzes each repo, creates intelligent commits",
+      },
+      {
+        tool: "ntm",
+        action: "Agent Sweep spawns Claude agents via ntm robot mode",
+        result: "Three-phase workflow: understand → plan → execute",
+      },
+      {
+        tool: "bv",
+        action: "Update beads as work is committed",
+        result: "Tasks auto-close when related commits push",
+      },
+    ],
+    outcome: "20+ repos committed with intelligent, contextual messages while you're away",
+    timeframe: "30 mins - 2 hours depending on repo count",
+  },
 ];
 
 // ============================================================
@@ -230,7 +288,7 @@ export const agentPrompts: AgentPrompt[] = [
     category: "execution",
     prompt: `OK, so start systematically and methodically and meticulously and diligently executing those remaining beads tasks that you created in the optimal logical order! Don't forget to mark beads as you work on them.`,
     whenToUse: "After planning and validation, execute the work",
-    bestWith: ["bv", "mail", "slb"],
+    bestWith: ["bv", "mail", "slb", "ru"],
   },
   {
     id: "fresh-eyes-review",
@@ -246,7 +304,7 @@ export const agentPrompts: AgentPrompt[] = [
     category: "execution",
     prompt: `Now, based on your knowledge of the project, commit all changed files now in a series of logically connected groupings with super detailed commit messages for each and then push. Take your time to do it right. Don't edit the code at all. Don't commit obviously ephemeral files.`,
     whenToUse: "Final step after all work is done",
-    bestWith: ["slb"],
+    bestWith: ["slb", "ru"],
   },
 ];
 
@@ -309,6 +367,24 @@ export const synergyExplanations = [
     example:
       "Rate limited on one Claude account? NTM spawns agents with fresh credentials from CAAM. No manual switching.",
   },
+  {
+    tools: ["ru", "ntm", "bv"],
+    title: "Multi-Repo Orchestra",
+    description:
+      "RU syncs all your repos with parallel workers. NTM spawns agents into each repo. BV tracks tasks across the entire fleet. Coordinated progress across dozens of projects.",
+    multiplier: "N× projects",
+    example:
+      "Morning: `ru sync -j4`. RU clones 3 new repos, pulls 15 updates. NTM spawns agents. By lunch, beads completed across 8 projects.",
+  },
+  {
+    tools: ["ru", "mail"],
+    title: "Repo Coordination",
+    description:
+      "RU agent-sweep can coordinate via Mail to prevent conflicts. Agents claim repos before committing. Complete audit trail of which agent touched which repo.",
+    multiplier: "Conflict-free",
+    example:
+      "Agent A claims repo-1, Agent B claims repo-2. Both run agent-sweep in parallel. No conflicts, clear ownership.",
+  },
 ];
 
 // ============================================================
@@ -328,12 +404,13 @@ export const flywheelTools: FlywheelTool[] = [
       "Transform tmux into a multi-agent command center. Spawn Claude, Codex, and Gemini agents in named panes. Broadcast prompts to specific agent types. Persistent sessions survive SSH disconnects.",
     deepDescription:
       "NTM is the orchestration layer that lets you run multiple AI agents in parallel. Spawn agents with type classification (cc/cod/gmi), broadcast prompts with filtering, use the command palette TUI for quick actions. Features include configurable hooks, robot mode for automation, and deep Agent Mail integration.",
-    connectsTo: ["slb", "mail", "cass", "caam"],
+    connectsTo: ["slb", "mail", "cass", "caam", "ru"],
     connectionDescriptions: {
       slb: "Routes dangerous commands through SLB safety checks",
       mail: "Spawned agents auto-register with Mail for coordination",
       cass: "All session history indexed for cross-agent search",
       caam: "Quick-switches credentials when spawning new agents",
+      ru: "RU agent-sweep uses ntm robot mode for orchestration",
     },
     stars: 16,
     features: [
@@ -366,12 +443,13 @@ export const flywheelTools: FlywheelTool[] = [
       "A complete coordination system for multi-agent workflows. Agents register identities, send/receive messages, search conversations, and declare file reservations to prevent edit conflicts.",
     deepDescription:
       "Agent Mail is the nervous system of the flywheel. It provides: agent identities (adjective+noun names like 'BlueLake'), threaded markdown messages, full-text search, and advisory file locks. Git-backed storage means complete audit trails. 20+ MCP tools for programmatic access.",
-    connectsTo: ["bv", "cm", "slb", "ntm"],
+    connectsTo: ["bv", "cm", "slb", "ntm", "ru"],
     connectionDescriptions: {
       bv: "Task IDs link conversations to Beads issues",
       cm: "Shared memories accessible across sessions",
       slb: "Approval requests delivered to agent inboxes",
       ntm: "NTM-spawned agents auto-register",
+      ru: "RU can coordinate repo claims via Mail",
     },
     stars: 1015,
     demoUrl: "https://dicklesworthstone.github.io/cass-memory-system-agent-mailbox-viewer/viewer/",
@@ -441,12 +519,13 @@ export const flywheelTools: FlywheelTool[] = [
       "Transforms task tracking with DAG-based analysis. Nine graph metrics, robot protocol for AI, time-travel diffing. Agents use BV to figure out what to work on next.",
     deepDescription:
       "BV treats your project as a Directed Acyclic Graph. Computes PageRank, Betweenness Centrality, HITS, Critical Path, and more. Robot protocol (--robot-*) outputs structured JSON for agents. Time-travel lets you diff across git history.",
-    connectsTo: ["mail", "ubs", "cass", "cm"],
+    connectsTo: ["mail", "ubs", "cass", "cm", "ru"],
     connectionDescriptions: {
       mail: "Task updates trigger notifications",
       ubs: "Bug scan results create blocking issues",
       cass: "Search prior sessions for task context",
       cm: "Remembers successful approaches",
+      ru: "RU integrates with beads for multi-repo task tracking",
     },
     stars: 546,
     demoUrl: "https://dicklesworthstone.github.io/beads_viewer-pages/",
@@ -615,6 +694,45 @@ export const flywheelTools: FlywheelTool[] = [
       "curl --proto '=https' --proto-redir '=https' -fsSL https://raw.githubusercontent.com/Dicklesworthstone/simultaneous_launch_button/main/scripts/install.sh | bash",
     language: "Go",
   },
+  {
+    id: "ru",
+    name: "Repo Updater",
+    shortName: "RU",
+    href: "https://github.com/Dicklesworthstone/repo_updater",
+    icon: "GitMerge",
+    color: "from-indigo-400 to-blue-500",
+    tagline: "Multi-repo sync + AI automation",
+    description:
+      "Synchronize dozens of GitHub repos with one command. AI-driven commit automation. Parallel workers, resume support, zero string parsing.",
+    deepDescription:
+      "RU solves the repo sprawl problem. Pure Bash with git plumbing (no locale issues). Parallel work-stealing sync with portable locking. Agent Sweep: three-phase AI workflow (understand → plan → execute) commits dirty repos intelligently. Review system orchestrates code reviews via ntm.",
+    connectsTo: ["ntm", "mail", "bv"],
+    connectionDescriptions: {
+      ntm: "Uses ntm robot mode for AI-assisted reviews and agent sweep",
+      mail: "Can coordinate repo claims across agents",
+      bv: "Integrates with beads for multi-repo task tracking",
+    },
+    stars: 50,
+    features: [
+      "Parallel sync: ru sync -j4 (work-stealing queue)",
+      "Resume from checkpoint: ru sync --resume",
+      "Agent Sweep: ru agent-sweep --parallel 4",
+      "AI code review: ru review --plan",
+      "Repo spec syntax: owner/repo@branch as local-name",
+      "JSON output: ru sync --json for automation",
+    ],
+    cliCommands: [
+      "ru sync                    # Clone missing + pull updates",
+      "ru sync -j4 --autostash    # Parallel with auto-stash",
+      "ru status --fetch          # Check ahead/behind state",
+      "ru agent-sweep --dry-run   # Preview AI commit plan",
+      "ru agent-sweep --parallel 4 --with-release",
+      "ru review --plan           # AI-assisted code review",
+    ],
+    installCommand:
+      'curl --proto \'=https\' --proto-redir \'=https\' -fsSL "https://raw.githubusercontent.com/Dicklesworthstone/repo_updater/main/install.sh" | bash',
+    language: "Bash",
+  },
 ];
 
 // ============================================================
@@ -650,14 +768,14 @@ export const flywheelDescription = {
   ],
   metrics: {
     totalStars: "2K+",
-    toolCount: 8,
-    languages: ["Go", "Rust", "TypeScript", "Python"],
+    toolCount: 9,
+    languages: ["Go", "Rust", "TypeScript", "Python", "Bash"],
     avgInstallTime: "< 30s each",
     projectsSimultaneous: "8+",
     agentsParallel: "6+",
   },
   keyInsight:
-    "The power comes from how these tools work together. Agents figure out what to work on using BV, coordinate via Mail, search past sessions with CASS, learn from CM, and stay protected by SLB. NTM orchestrates everything.",
+    "The power comes from how these tools work together. Agents figure out what to work on using BV, coordinate via Mail, search past sessions with CASS, learn from CM, stay protected by SLB, and sync repos with RU. NTM orchestrates everything.",
 };
 
 // ============================================================

@@ -35,7 +35,7 @@ for candidate in \
     fi
 done
 
-# Lesson titles (indexed 0-8)
+# Lesson titles (indexed 0-9)
 declare -a LESSON_TITLES=(
     "Welcome & Overview"
     "Linux Navigation"
@@ -46,9 +46,10 @@ declare -a LESSON_TITLES=(
     "NTM Prompt Palette"
     "The Flywheel Loop"
     "Keeping Updated"
+    "RU: Multi-Repo Mastery"
 )
 
-# Lesson files (indexed 0-8)
+# Lesson files (indexed 0-9)
 declare -a LESSON_FILES=(
     "00_welcome.md"
     "01_linux_basics.md"
@@ -59,6 +60,7 @@ declare -a LESSON_FILES=(
     "06_ntm_command_palette.md"
     "07_flywheel_loop.md"
     "08_keeping_updated.md"
+    "09_ru.md"
 )
 
 # Lesson summaries - key learning points for celebration screen (pipe-separated)
@@ -72,6 +74,7 @@ declare -gA LESSON_SUMMARIES=(
     [6]="Using the prompt palette|Common prompts and shortcuts|Customizing your workflow"
     [7]="The agentic development loop|Continuous improvement|Measuring productivity"
     [8]="Keeping tools updated|Staying current with AI agents|Community resources"
+    [9]="Multi-repo sync with ru sync|AI-driven commits via agent-sweep|Parallel workflow automation"
 )
 
 # Service definitions for authentication flow
@@ -1317,7 +1320,7 @@ ACFS Onboarding Tutorial
 
 Usage:
   onboard           Launch interactive menu
-  onboard N         Jump to lesson N (1-9)
+  onboard N         Jump to lesson N (1-10)
   onboard reset     Reset all progress
   onboard status    Show completion status
   onboard --cheatsheet [query]  Show ACFS command cheatsheet
@@ -1333,6 +1336,7 @@ Lessons:
   7 - NTM Prompt Palette
   8 - The Flywheel Loop
   9 - Keeping Updated
+  10 - RU: Multi-Repo Mastery
 
 Environment:
   ACFS_LESSONS_DIR   Path to lesson files (default: ~/.acfs/onboard/lessons)
@@ -1343,7 +1347,7 @@ EOF
         init_progress
         main_menu
         ;;
-    [1-9])
+    [1-9]|10)
         init_progress
         idx=$(( $1 - 1 ))
         show_lesson "$idx"

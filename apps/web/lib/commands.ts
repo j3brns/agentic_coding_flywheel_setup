@@ -233,6 +233,14 @@ export const COMMANDS: CommandRef[] = [
     example: "slb",
   },
   {
+    name: "ru",
+    fullName: "Repo Updater",
+    description: "Multi-repo sync with AI-driven commit automation.",
+    category: "stack",
+    example: "ru sync -j4",
+    aliases: ["repo-updater"],
+  },
+  {
     name: "am",
     fullName: "Agent Mail",
     description: "Agent coordination and messaging.",

@@ -145,7 +145,7 @@ get_version() {
         vercel)
             version=$(vercel --version 2>/dev/null || echo "unknown")
             ;;
-        ntm|ubs|bv|cass|cm|caam|slb)
+        ntm|ubs|bv|cass|cm|caam|slb|ru)
             version=$("$tool" --version 2>/dev/null | head -1 || echo "unknown")
             ;;
         atuin)
@@ -1114,6 +1114,11 @@ update_stack() {
     # SLB
     if cmd_exists slb; then
         run_cmd "SLB" update_run_verified_installer slb
+    fi
+
+    # RU (Repo Updater)
+    if cmd_exists ru; then
+        run_cmd "RU" update_run_verified_installer ru --easy-mode
     fi
 }
 

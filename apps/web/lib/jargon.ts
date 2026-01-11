@@ -489,6 +489,33 @@ export const jargonDictionary: Record<string, JargonTerm> = {
     related: ["ai-agents", "ntm", "agent-mail", "git"],
   },
 
+  ru: {
+    term: "RU",
+    short: "Repo Updater, a tool for syncing and managing multiple GitHub repositories",
+    long: "RU (Repo Updater) solves the multi-repo management problem. When you have 20+ GitHub repos to keep in sync, manually running 'cd repo; git pull' for each one is tedious and error-prone. RU syncs all your repos with one command, using parallel workers for speed. Even better, it has Agent Sweep: an AI-driven commit automation system that analyzes dirty repos, understands the changes, and creates intelligent commit messages. RU uses pure git plumbing (no string parsing), making it locale-safe and reliable.",
+    analogy: "RU is like having a diligent assistant who manages all your filing cabinets. Every morning, they check each cabinet for updates, pull in any new documents, and flag anything that needs your attention. And when you've made changes to several cabinets, they can intelligently organize and label your work without you specifying every detail.",
+    why: "Multi-repo workflows are common in serious development. A project might span a frontend repo, backend repo, shared libraries, deployment configs, and documentation. RU keeps them all synchronized and enables AI agents to commit across your entire fleet of repos intelligently.",
+    related: ["git", "ntm", "agent-mail", "beads"],
+  },
+
+  "agent-sweep": {
+    term: "Agent Sweep",
+    short: "RU's AI-powered commit automation feature",
+    long: "Agent Sweep is a three-phase AI workflow built into RU. Phase 1: Understand (agent reads AGENTS.md, explores codebase, learns conventions). Phase 2: Plan (agent produces a JSON commit plan with files and messages). Phase 3: Execute (RU validates the plan and executes with deterministic git commands). This lets you commit changes across many repos with intelligent, contextual messages without manually writing each commit message.",
+    analogy: "Imagine an assistant who visits each of your workstations, reviews what you've been working on, understands the context, writes professional notes about the changes, and files everything properly. Agent Sweep does this for your dirty repos, creating thoughtful commits that explain what changed and why.",
+    why: "Manual commit messages become a bottleneck when working across many repos. Agent Sweep removes that friction by intelligently analyzing changes and creating meaningful commits. Always run with '--dry-run' first to preview what it will do.",
+    related: ["ru", "git", "ai-agents"],
+  },
+
+  "parallel-sync": {
+    term: "Parallel Sync",
+    short: "RU's ability to sync multiple repos simultaneously using worker threads",
+    long: "When you run 'ru sync -j4', RU uses 4 parallel workers to sync repos simultaneously. Instead of waiting for each repo to finish before starting the next, it processes multiple repos at once using a work-stealing queue. This can make syncing 20+ repos take minutes instead of much longer. The number after -j controls how many parallel workers to use.",
+    analogy: "Like having 4 assistants organizing filing cabinets instead of 1. Each assistant works on a different cabinet, and when they finish one, they grab the next from the queue. The whole job finishes much faster.",
+    why: "Time adds up when managing many repos. Parallel sync dramatically reduces wait time when starting your day or when you need all repos current before a major operation.",
+    related: ["ru"],
+  },
+
   "open-source": {
     term: "Open-source",
     short: "Software whose code is publicly available for anyone to inspect, use, and improve",

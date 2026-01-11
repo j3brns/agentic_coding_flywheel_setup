@@ -184,6 +184,14 @@ export const LESSONS: Lesson[] = [
     duration: "12 min",
     file: "19_slb_case_study.md",
   },
+  {
+    id: 20,
+    slug: "ru",
+    title: "RU: Multi-Repo Mastery",
+    description: "Sync repos and automate commits with AI",
+    duration: "10 min",
+    file: "20_ru.md",
+  },
 ];
 
 /** Total number of lessons */

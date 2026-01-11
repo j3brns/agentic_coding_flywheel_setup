@@ -906,6 +906,16 @@ check_stack() {
             "Re-run: curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/mcp_agent_mail/main/scripts/install.sh | bash"
     fi
 
+    # Check RU (Repo Updater)
+    if command -v ru &>/dev/null; then
+        local version
+        version=$(get_version_line "ru")
+        check "stack.ru" "RU ($version)" "pass" "installed"
+    else
+        check "stack.ru" "RU (Repo Updater)" "warn" "not installed" \
+            "Re-run: curl -fsSL https://raw.githubusercontent.com/Dicklesworthstone/repo_updater/main/install.sh | bash"
+    fi
+
     blank_line
 }
 

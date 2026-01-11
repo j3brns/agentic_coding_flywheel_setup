@@ -320,6 +320,7 @@ const FLYWHEEL_TOOLS = [
   { name: "CM", color: "from-pink-400 to-fuchsia-500", desc: "Memory" },
   { name: "CAAM", color: "from-amber-400 to-orange-500", desc: "Auth" },
   { name: "SLB", color: "from-yellow-400 to-amber-500", desc: "Safety" },
+  { name: "RU", color: "from-indigo-400 to-blue-500", desc: "Repo Sync" },
 ];
 
 function FlywheelSection() {
