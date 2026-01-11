@@ -37,7 +37,7 @@ fi
 
 # Test 3: Hook status
 echo "3. Checking hook registration..."
-if dcg doctor --format json 2>/dev/null | grep -q '"hook_registered":true'; then
+if dcg doctor 2>&1 | grep -q "hook wiring.*OK"; then
     pass "Hook is registered"
 else
     # Not a fatal error - might be intentional

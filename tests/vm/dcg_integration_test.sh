@@ -103,18 +103,18 @@ test_dcg_packs_available() {
     # Check for core packs
     if echo "$pack_output" | grep -q "core.git"; then
         harness_pass "Core git pack available"
-        ((pass_count++))
+        pass_count=$((pass_count + 1))
     else
         harness_fail "Core git pack NOT found"
-        ((fail_count++))
+        fail_count=$((fail_count + 1))
     fi
 
     if echo "$pack_output" | grep -q "core.filesystem"; then
         harness_pass "Core filesystem pack available"
-        ((pass_count++))
+        pass_count=$((pass_count + 1))
     else
         harness_fail "Core filesystem pack NOT found"
-        ((fail_count++))
+        fail_count=$((fail_count + 1))
     fi
 
     [[ $fail_count -eq 0 ]]
